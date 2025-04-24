@@ -139,10 +139,9 @@ public class Media extends VerticalLayout {
                 .set("background-color", "#f8f8f8");
         replyCardLayout.setWidth("800px");
 
-        // 🔍 Find the parent post
         Post parentPost = UserPost.findPostById(postData.getParentId());
 
-        // 🧍 Top: Parent Avatar + Username + Timestamp
+        // 🔝 Top info row for parent
         HorizontalLayout topRow = new HorizontalLayout();
         Avatar originalAvatar = new Avatar(parentPost != null ? parentPost.getUserName() : "Unknown");
         Span originalPoster = new Span(parentPost != null ? parentPost.getUserName() : "Unknown");
@@ -153,7 +152,7 @@ public class Media extends VerticalLayout {
         topRow.setJustifyContentMode(JustifyContentMode.START);
         topRow.setAlignItems(Alignment.CENTER);
 
-        // 💬 Original comment content in a box
+        // 💬 Parent post content
         Div originalPostContent = new Div();
         originalPostContent.getStyle()
                 .set("white-space", "pre-wrap")
@@ -166,7 +165,27 @@ public class Media extends VerticalLayout {
                 .set("margin-bottom", "10px");
         originalPostContent.setText(parentPost != null ? parentPost.getPostContent() : "Original post not found");
 
-        // 🧑‍💬 Reply Meta: Avatar + Username + Time
+        // ❤️ Likes row for parent post (only if parent exists)
+        HorizontalLayout parentLikesRow = new HorizontalLayout();
+        if (parentPost != null) {
+            parentLikesRow.setWidth("750px");
+            parentLikesRow.setJustifyContentMode(JustifyContentMode.BETWEEN);
+            parentLikesRow.setAlignItems(Alignment.CENTER);
+
+            Span parentLikesCount = new Span("Liked: " + parentPost.getLikes());
+            parentLikesCount.getStyle()
+                    .set("font-size", "14px")
+                    .set("color", "#888");
+
+            HorizontalLayout parentLikeButtonWrapper = new HorizontalLayout();
+            parentLikeButtonWrapper.setWidthFull();
+            parentLikeButtonWrapper.setJustifyContentMode(JustifyContentMode.END);
+            parentLikeButtonWrapper.add(new LikeButton(parentPost));
+
+            parentLikesRow.add(parentLikesCount, parentLikeButtonWrapper);
+        }
+
+        // 📌 Reply meta info
         HorizontalLayout replyMeta = new HorizontalLayout();
         Avatar replyAvatar = new Avatar(postData.getUserName());
         Span replyUser = new Span(postData.getUserName());
@@ -177,7 +196,7 @@ public class Media extends VerticalLayout {
         replyMeta.setAlignItems(Alignment.CENTER);
         replyMeta.getStyle().set("margin-left", "50px");
 
-        // 📝 Reply Content
+        // 📝 Reply content
         Div replyContent = new Div();
         replyContent.getStyle()
                 .set("white-space", "pre-wrap")
@@ -187,33 +206,33 @@ public class Media extends VerticalLayout {
                 .set("margin-left", "50px");
         replyContent.setText(postData.getPostContent());
 
-        // ➡️ New: Likes + Like Button Layout for reply
-        // ➡️ Likes + Like Button Layout for reply
+        // 👍 Likes row for reply post
         HorizontalLayout likesRow = new HorizontalLayout();
-// ❌ likesRow.setWidthFull(); // REMOVE THIS LINE
-        likesRow.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        likesRow.setWidth("700px");
         likesRow.setAlignItems(Alignment.CENTER);
-        likesRow.getStyle()
-                .set("margin-left", "50px")
-                .set("width", "700px"); // ✅ set it manually to match reply content
+        likesRow.getStyle().set("margin-left", "50px");
 
-// Likes count
         Span likesCount = new Span("Liked: " + postData.getLikes());
         likesCount.getStyle()
                 .set("font-size", "14px")
                 .set("color", "#888");
 
-// Like button avatar
-        LikeButton likeButton = new LikeButton(postData);
+        HorizontalLayout buttonWrapper = new HorizontalLayout();
+        buttonWrapper.setWidthFull();
+        buttonWrapper.setJustifyContentMode(JustifyContentMode.END);
+        buttonWrapper.add(new LikeButton(postData));
 
-        likesRow.add(likesCount, likeButton);
+        likesRow.add(likesCount, buttonWrapper);
 
-
-        // ➕ Assemble everything
-        replyCardLayout.add(topRow, originalPostContent, replyMeta, replyContent, likesRow);
+        // 🧱 Final layout assembly
+        replyCardLayout.add(topRow, originalPostContent);
+        if (parentPost != null) replyCardLayout.add(parentLikesRow);
+        replyCardLayout.add(replyMeta, replyContent, likesRow);
 
         return replyCardLayout;
     }
+
+
 
 
 
