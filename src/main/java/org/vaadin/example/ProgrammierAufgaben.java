@@ -1,5 +1,6 @@
 package org.vaadin.example;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
@@ -10,7 +11,6 @@ import com.vaadin.flow.router.Route;
 
 import java.util.Random;
 import java.util.Timer;
-import java.util.TimerTask;
 
 @Route("programmier-aufgaben")
 public class ProgrammierAufgaben extends VerticalLayout {
@@ -19,10 +19,16 @@ public class ProgrammierAufgaben extends VerticalLayout {
     private boolean isCounting = false;
     private Timer timer;
     private int[] randomArray;
+    private int[] sortedArray;
     private Button generateSortButton;
+    private Button generateArrayButton;
     private Div arrayDiv;
+    private TextField sortedArrayField;
+    private Button fibonacciButton;
 
     public ProgrammierAufgaben() {
+        setSizeFull();  // Make the main layout fill the entire screen
+
         // Counting UI
         TextField numberInput = new TextField("Enter a number");
         numberInput.setPlaceholder("Type a number");
@@ -48,47 +54,28 @@ public class ProgrammierAufgaben extends VerticalLayout {
         });
 
         VerticalLayout countingLayout = new VerticalLayout(numberInput, loopButton, numberDiv);
-        countingLayout.setWidth("0");
         countingLayout.setAlignItems(Alignment.START);
-        countingLayout.setSpacing(false);
-        countingLayout.setMargin(false);
-        countingLayout.setPadding(false);
-        countingLayout.setHeight("100%");
 
         // Array UI
         arrayDiv = new Div();
         arrayDiv.setText("Array: None");
 
-        generateSortButton = new Button("Generate Array", e -> generateRandomArray());
+        generateArrayButton = new Button("Generate Array", e -> generateRandomArray());
 
-        VerticalLayout arrayLayout = new VerticalLayout(generateSortButton, arrayDiv);
+        sortedArrayField = new TextField();
+        sortedArrayField.setReadOnly(true);
+
+        generateSortButton = new Button("Sort", e -> sortArray());
+
+        VerticalLayout arrayLayout = new VerticalLayout(generateArrayButton, arrayDiv, generateSortButton, sortedArrayField);
         arrayLayout.setAlignItems(Alignment.CENTER);
-        arrayLayout.setSpacing(false);
-        arrayLayout.setMargin(false);
 
         // Search UI
-        TextField searchField = new TextField();
-        searchField.setPlaceholder("Enter a word");
-        searchField.setVisible(false);
-
-        Button searchButton = new Button("Search", e -> searchField.setVisible(true));
-
-        VerticalLayout searchLayout = new VerticalLayout(searchButton, searchField);
-        searchLayout.setWidth("0");
-        searchLayout.setAlignItems(Alignment.END);
-        searchLayout.setSpacing(false);
-        searchLayout.setMargin(false);
-        searchLayout.setPadding(false);
-
-        // Letter Search UI (Aligned to END)
         TextField wordInput = new TextField("Enter a word");
         wordInput.setPlaceholder("Type a word");
 
         TextField letterInput = new TextField("Enter letters");
         letterInput.setPlaceholder("Type letters to search");
-
-        Div resultDiv = new Div();
-        resultDiv.setText("Result: ");
 
         Button findLettersButton = new Button("Find Letters", e -> {
             String word = wordInput.getValue();
@@ -108,56 +95,96 @@ public class ProgrammierAufgaben extends VerticalLayout {
                 }
             }
 
-            resultDiv.setText(result.length() > 10 ? result.toString() : "No matches found.");
+            Notification.show(result.length() > 10 ? result.toString() : "No matches found.");
         });
 
-        VerticalLayout searchLetterLayout = new VerticalLayout(wordInput, letterInput, findLettersButton, resultDiv);
-        searchLetterLayout.setAlignItems(Alignment.END); // Align to the right
-        searchLetterLayout.setSpacing(false);
-        searchLetterLayout.setMargin(false);
-        searchLetterLayout.setPadding(false);
+        VerticalLayout searchLayout = new VerticalLayout(wordInput, letterInput, findLettersButton);
+        searchLayout.setAlignItems(Alignment.END);
+
+        // Fibonacci UI
+        TextField fibonacciInput = new TextField("Enter position for Fibonacci");
+        fibonacciInput.setPlaceholder("Type a number");
+
+        fibonacciButton = new Button("Fibonacci Number at place: 0");
+
+        Button calculateFibonacciButton = new Button("Calculate Fibonacci", e -> {
+            try {
+                int position = Integer.parseInt(fibonacciInput.getValue());
+                if (position < 0) {
+                    Notification.show("Please enter a non-negative number.");
+                    return;
+                }
+                int fibonacciNumber = calculateFibonacci(position);
+                fibonacciButton.setText("Fibonacci Number at place: " + fibonacciNumber);
+            } catch (NumberFormatException ex) {
+                Notification.show("Please enter a valid number.");
+            }
+        });
+
+        VerticalLayout fibonacciVerticalLayout = new VerticalLayout(fibonacciInput, calculateFibonacciButton, fibonacciButton);
+        fibonacciVerticalLayout.setAlignItems(Alignment.CENTER); // Center the elements inside the vertical layout
+
+        HorizontalLayout fibonacciLayout = new HorizontalLayout(fibonacciVerticalLayout);
+        fibonacciLayout.setWidth("100%"); // Ensure it takes the full width of the screen
+        fibonacciLayout.setAlignItems(Alignment.END); // This ensures the layout is centered
+        fibonacciLayout.setJustifyContentMode(JustifyContentMode.START); // This centers the items in the layout horizontally
+        fibonacciLayout.setWidth("100%"); // Ensure it takes the full width to be centered
+        fibonacciLayout.setHeight("100%"); // Ensure it takes the full width to be centered
+
+        // Create a button for the center of the screen
+        Button backToMainButton = new Button("Back to Main View", e -> {
+            UI.getCurrent().navigate(MainView.class);
+        });
+
+        // Create a layout to center the button horizontally and vertically on the screen
+        VerticalLayout centerButtonLayout = new VerticalLayout(backToMainButton);
+        centerButtonLayout.setAlignItems(Alignment.CENTER); // Center the button horizontally
+        centerButtonLayout.setHeight("100%"); // Set the height to take up the full screen
+        centerButtonLayout.setJustifyContentMode(JustifyContentMode.CENTER); // Center the button vertically
 
         // Main Layout
         HorizontalLayout mainLayout = new HorizontalLayout(countingLayout, arrayLayout, searchLayout);
         mainLayout.setWidth("100%");
         mainLayout.setAlignItems(Alignment.START);
-        mainLayout.setSpacing(true);
 
-        add(mainLayout, searchLetterLayout);
+        // Add the center button layout, main layout, and Fibonacci layout
+        add(mainLayout, centerButtonLayout, fibonacciLayout);
     }
 
     private void startCounting(int targetNumber, Div numberDiv) {
         isCounting = true;
         currentNumber = 1;
 
-        timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                getUI().ifPresent(ui -> ui.access(() -> {
-                    if (currentNumber <= targetNumber) {
-                        numberDiv.setText("Current number: " + currentNumber);
-                    } else {
-                        timer.cancel();
-                        isCounting = false;
-                    }
-                }));
+        // Enable polling
+        UI.getCurrent().setPollInterval(500); // Poll every 500ms
+
+        new Thread(() -> {
+            while (currentNumber <= targetNumber) {
+                try {
+                    Thread.sleep(1000); // Simulate a delay
+                } catch (InterruptedException ignored) {
+                }
+
+                int finalNumber = currentNumber;
+                getUI().ifPresent(ui -> ui.access(() -> numberDiv.setText("Current number: " + finalNumber)));
 
                 currentNumber++;
             }
-        }, 0, 1000);
+            isCounting = false;
+        }).start();
     }
+
 
     private void generateRandomArray() {
         randomArray = new int[5];
+        sortedArray = new int[5];
         Random rand = new Random();
         for (int i = 0; i < randomArray.length; i++) {
             randomArray[i] = rand.nextInt(100);
+            sortedArray[i] = randomArray[i];
         }
 
         updateArrayDisplay();
-        generateSortButton.setText("Sort");
-        generateSortButton.addClickListener(e -> sortArray());
     }
 
     private void updateArrayDisplay() {
@@ -169,16 +196,36 @@ public class ProgrammierAufgaben extends VerticalLayout {
     }
 
     private void sortArray() {
-        for (int i = 0; i < randomArray.length - 1; i++) {
-            for (int j = 0; j < randomArray.length - 1 - i; j++) {
-                if (randomArray[j] > randomArray[j + 1]) {
-                    int temp = randomArray[j];
-                    randomArray[j] = randomArray[j + 1];
-                    randomArray[j + 1] = temp;
+        sortedArray = sortedArray.clone();
+        for (int i = 0; i < sortedArray.length - 1; i++) {
+            for (int j = 0; j < sortedArray.length - 1 - i; j++) {
+                if (sortedArray[j] > sortedArray[j + 1]) {
+                    int temp = sortedArray[j];
+                    sortedArray[j] = sortedArray[j + 1];
+                    sortedArray[j + 1] = temp;
                 }
             }
         }
 
-        updateArrayDisplay();
+        updateSortedArrayDisplay();
+    }
+
+    private void updateSortedArrayDisplay() {
+        StringBuilder arrayText = new StringBuilder();
+        for (int num : sortedArray) {
+            arrayText.append(num).append(" ");
+        }
+        sortedArrayField.setValue(arrayText.toString().trim());
+    }
+
+    private int calculateFibonacci(int n) {
+        if (n <= 1) return n;
+        int a = 0, b = 1, temp;
+        for (int i = 2; i <= n; i++) {
+            temp = a + b;
+            a = b;
+            b = temp;
+        }
+        return b;
     }
 }

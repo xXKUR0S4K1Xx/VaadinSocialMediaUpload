@@ -1,48 +1,32 @@
 package org.vaadin.example;
 
-import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.Route;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.router.Route;
 
 @Route
 public class MainView extends VerticalLayout {
 
-    public MainView(GreetService service) {
-        // Use TextField for standard text input
-        TextField textField = new TextField("Your name");
-        textField.addClassName("bordered");
+    public MainView() {
+        // Navigation buttons
+        Button hangmanButton = new Button("Go to Hangman", e -> UI.getCurrent().navigate("hangman"));
+        Button notebookButton = new Button("Go to Notebook", e -> UI.getCurrent().navigate("notebook"));
+        Button loginButton = new Button("Go to Login", e -> UI.getCurrent().navigate("login"));
+        Button mediaButton = new Button("Go to Media", e -> UI.getCurrent().navigate("media"));
 
-        // Button click listeners can be defined as lambda expressions
-        Button button = new Button("Say hello", e -> {
-            add(new Paragraph(service.greet(textField.getValue())));
-        });
+        Button statisticsButton = new Button("Go to Statistics", e -> UI.getCurrent().navigate("statistics"));
+        Button coinGameButton = new Button("Go to CoinGame", e -> UI.getCurrent().navigate("coin-game"));
+        Button programmierAufgabenButton = new Button("Go to ProgrammierAufgaben", e -> UI.getCurrent().navigate("programmier-aufgaben"));
 
-        // Theme variants give you predefined extra styles for components.
-        // Example: Primary button has a more prominent look.
-        button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        // You can specify keyboard shortcuts for buttons.
-        // Example: Pressing enter in this view clicks the Button.
-        button.addClickShortcut(Key.ENTER);
-
-        // Create a new button to navigate to ProgrammierAufgaben
-        Button programmierAufgabenButton = new Button("Go to ProgrammierAufgaben", e -> {
-            UI.getCurrent().navigate("programmier-aufgaben");
-        });
-
-        // Position the "Go to ProgrammierAufgaben" button in the top-right corner
+        // Header layout for navigation buttons
         HorizontalLayout headerLayout = new HorizontalLayout();
         headerLayout.setWidthFull();
-        headerLayout.setJustifyContentMode(JustifyContentMode.END);
-        headerLayout.add(programmierAufgabenButton);
+        headerLayout.setJustifyContentMode(JustifyContentMode.CENTER);
+        headerLayout.add(programmierAufgabenButton, coinGameButton, statisticsButton, hangmanButton, notebookButton, loginButton, mediaButton);
 
-        // Add the headerLayout and the other components to the main layout
-        add(headerLayout, textField, button);
+        // Add the header layout to the main layout
+        add(headerLayout);
     }
 }

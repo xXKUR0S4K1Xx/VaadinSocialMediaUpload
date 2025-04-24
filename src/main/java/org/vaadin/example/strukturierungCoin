@@ -1,0 +1,21 @@
+Wie zu multiple players (mit Liste):
+    - Create List
+        - Put all Players in list
+        - Query the name of the player
+            - check if player is in Liste
+                - if yes
+                    - nothing
+                - if no
+                    - add new player to list
+                    - create new Div mit namen totaldiv winsdiv lossesdiv
+                    - put new dif in statisticsLayout
+
+Wie multiple players (ohne Liste):
+    - resetName Button
+        - set Name to false
+    - If Name == false in submitButton
+        - set new name
+          - create new div mit namen totaldiv winsdiv lossesdiv
+          - put new div in statisticsLayout
+    - else
+        - nothing
