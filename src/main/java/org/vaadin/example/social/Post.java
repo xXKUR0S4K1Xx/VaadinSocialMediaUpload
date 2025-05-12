@@ -5,22 +5,25 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
+// Represents a single post or reply in the system
+// Represents a single post or reply in the system
+// Represents a single post or reply in the system
 public class Post {
-    private String postId;
-    private String parentId;
-    private int likes;
-    private String parentUser;
-    private String postContent;
-    private String timestamp;
-    private String userName;
-    private String likedUsers;  // this will remain a string to keep it as per your structure
+    private String postId;          // Unique identifier for this post
+    private String parentId;        // ID of the parent post (0 if this is not a reply)
+    private int likes;              // Number of likes this post has received
+    private String parentUser;      // Username of the author of the parent post (if any)
+    private String postContent;     // The text content of the post
+    private String timestamp;       // When the post was created (in string format)
+    private String userName;        // The username of the author of this post
+    private String likedUsers;      // Comma-separated usernames of people who liked the post
 
-    // Constructor
-    public Post(String postId, String parentId, int likes, String parentUser, String postContent,
-                String timestamp, String userName, String likedUsers) {
+    // Constructor to initialize a new Post object with all fields
+    public Post(String postId, String parentId, int likes, String parentUser,
+                String postContent, String timestamp, String userName, String likedUsers) {
         this.postId = postId;
         this.parentId = parentId;
-        this.likes = likes;
+        this.likes = likes;             // Set likes as an integer
         this.parentUser = parentUser;
         this.postContent = postContent;
         this.timestamp = timestamp;
@@ -28,73 +31,100 @@ public class Post {
         this.likedUsers = likedUsers;
     }
 
-    // Getters
-    public String getPostId() { return postId; }
-    public String getParentId() { return parentId; }
-    public int getLikes() { return likes; }
-    public String getParentUser() { return parentUser; }
-    public String getPostContent() { return postContent; }
-    public String getUserName() { return userName; }
-    public String getLikedUsers() { return likedUsers; }
+    // Getters and setters if needed
+    public String getPostId() {
+        return postId;
+    }
 
-    // Setter for likedUsers
+    public String getParentId() {
+        return parentId;
+    }
+
+    public int getLikes() {
+        return likes;
+    }
+
+    public String getParentUser() {
+        return parentUser;
+    }
+
+    public String getPostContent() {
+        return postContent;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public String getLikedUsers() {
+        return likedUsers;
+    }
+
+
+
+    // Setter for liked users (replaces the whole string)
     public void setLikedUsers(String likedUsers) {
         this.likedUsers = likedUsers;
     }
 
-    // Add a like to the post
+    // Adds a like from the given username if they haven't already liked the post
     public void addLike(String username) {
         if (likedUsers == null || likedUsers.isEmpty()) {
-            likedUsers = username;  // If there are no liked users, set the first one
+            likedUsers = username; // If no likes yet, start the list
         } else {
             if (!likedUsers.contains(username)) {
-                likedUsers += "," + username;  // Add the new user to the list (comma-separated)
+                likedUsers += "," + username; // Append new user if not already in the list
             }
         }
-        likes++;  // Increase the like count
+        likes++; // Increment like count regardless
     }
 
-    // Update the likes count (if needed in the future)
+    // Setter for the likes field (manually override the count)
     public void setLikes(int likes) {
         this.likes = likes;
     }
 
+    // Format a timestamp string into a human-readable format (dd-MM-yyyy/HH:mm)
     public static String formatTimestamp(String timestamp) {
-        // Check if the timestamp is a Unix timestamp (numeric string)
         try {
+            // Try parsing it as a Unix timestamp
             long timestampInSeconds = Long.parseLong(timestamp);
             Instant instant = Instant.ofEpochSecond(timestampInSeconds);
             LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy/HH:mm");
             return dateTime.format(formatter);
         } catch (NumberFormatException e) {
-            // If it's not a Unix timestamp, try parsing as ISO 8601 format
+            // If not a Unix timestamp, try ISO-8601 format
             try {
                 LocalDateTime dateTime = LocalDateTime.parse(timestamp);
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy/HH:mm");
                 return dateTime.format(formatter);
             } catch (Exception ex) {
-                // If both parsing attempts fail, return the original string
+                // Fallback: return the original value if parsing fails
                 return timestamp;
             }
         }
-
-    }
-    public String getTimestamp() {
-        return timestamp;
     }
 
+
+    // Converts the Post object into a single string for file storage (fields joined with "#")
     @Override
     public String toString() {
         return String.join("#",
                 postId,
                 parentId,
                 String.valueOf(likes),
-                parentUser, // commenters (in your app, this is used for "parentUser")
-                postContent,
-                timestamp,
-                userName,
-                likedUsers
+                parentUser == null ? "" : parentUser,
+                postContent == null ? "" : postContent,
+                timestamp == null ? "" : timestamp,
+                userName == null ? "" : userName,
+                likedUsers == null ? "" : likedUsers
         );
     }
+
+
 }

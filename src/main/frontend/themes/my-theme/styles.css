@@ -46,4 +46,20 @@ vaadin-text-field.bordered::part(input-field) {
 
 scrollbar-gutter: stable both-edges;
 
+html, body, #outlet {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+/* Set the background and text color to transparent, ensuring no interference */
+ vaadin-text-field::part(input-field) {
+     background-color: transparent !important; /* Transparent background */
+     color: inherit !important;                 /* Inherit text color from parent */
+     border: none !important;                   /* Remove any borders */
+ }
 
+ vaadin-text-field::part(input) {
+     background-color: transparent !important; /* Transparent background for the input area */
+     color: inherit !important;                 /* Inherit text color from parent */
+     border: none !important;                   /* Remove any borders */
+ }

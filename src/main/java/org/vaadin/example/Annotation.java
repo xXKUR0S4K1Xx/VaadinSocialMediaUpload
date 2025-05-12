@@ -5,9 +5,8 @@ public class Annotation {
 
 /*
 NEXT:
-Function to reply to a post. Either reply to parent post or new post.
-add like bar to parent. That got lost somehow
-Sort function
+hab alles reverted aber jetzt liest der das falsche als text ab
+Sort function by top posts
 
  Features (erste Stufe)
 Startseite mit Beitragsübersicht
