@@ -44,8 +44,10 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
 
         String username = getLoggedInUsername();
         Avatar userAvatar = new Avatar(username);
-        userAvatar.getElement().getStyle().set("background-color", "#fff");  // white background
-
+        userAvatar.getStyle()
+                .set("background-color", "white")  //White background
+                .set("color", "black")  // black text
+                .set("border", "1px solid, black");  // white border
         // Create the popover once outside the click event
         Popover popover = new Popover();
         popover.setTarget(userAvatar);
@@ -136,7 +138,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         rootLayout.getStyle()
                 .set("border-bottom", "1px solid #666")
                 .set("background-color", "#1a1a1b")  // Baby blue background
-                .set("color", "#333");  // Text remains dark grey, unaffected by the background
+                .set("color", "#ffffff");  // Text remains dark grey, unaffected by the background
 
 
         // Sub-layouts for left, center, and right
@@ -263,6 +265,8 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         VerticalLayout filler = new VerticalLayout();
         filler.setHeight("95%");
         filler.setWidth("200px");
+        filler.setAlignItems(Alignment.END);
+
         filler.getStyle()
                 .set("position", "absolute")
                 .set("bottom", "0")
@@ -270,9 +274,65 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                 .set("border-top", "1px solid #666")
                 .set("background-color", "#1a1a1b");
 
-        Button button2 = new Button("test");
-        filler.add(button2);
+// Create a "Search" div to act like a button
+        Div searchDiv = new Div();
+        searchDiv.setText("Search");
+        searchDiv.getStyle()
+                .set("cursor", "pointer")
+                .set("padding", "8px")
+                .set("border", "1px solid #888")
+                .set("border-radius", "4px")
+                .set("background-color", "#2a2a2a")
+                .set("color", "#ffffff")
+                .set("width", "fit-content");
 
+
+        Popover searchPopover = new Popover();
+        searchPopover.setTarget(searchDiv);
+        searchPopover.setPosition(PopoverPosition.BOTTOM);
+        searchPopover.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
+
+// Create the content once
+        VerticalLayout popoverContent2 = new VerticalLayout();
+        popoverContent2.setPadding(true);
+        popoverContent2.setSpacing(true);
+        popoverContent2.getStyle()
+                .set("background-color", "#1a1a1b")
+                .set("color", "#ffffff");
+
+        Button newButton = new Button("New");
+        newButton.getStyle().set("color", "white");
+
+        Button topButton = new Button("Top");
+        topButton.getStyle().set("color", "white");
+
+
+        popoverContent2.add(newButton, topButton);
+        searchPopover.add(popoverContent2);
+
+// Track open state
+        boolean[] isPopoverOpen = {false};
+
+// Toggle logic on click
+        searchDiv.getElement().addEventListener("click", e -> {
+            if (!isPopoverOpen[0]) {
+                // Add a delay before showing
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        getUI().ifPresent(ui -> ui.access(() -> {
+                            searchPopover.setOpened(true);
+                            isPopoverOpen[0] = true;
+                        }));
+                    }
+                }, 100); // 100 ms delay
+            } else {
+                searchPopover.setOpened(false);
+                isPopoverOpen[0] = false;
+            }
+        });
+
+        filler.add(searchDiv);
 // ===== Content =====
         layout.add(content); // Only content is part of layout flow
 
@@ -285,6 +345,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
     public VerticalLayout createCommentCard(Post postData) {
         // Create the container for the card layout
         VerticalLayout commentCardLayout = new VerticalLayout();
+        commentCardLayout.addClassName("hover-card");
 
         commentCardLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         commentCardLayout.setSpacing(true);
@@ -293,17 +354,24 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                 .set("border", "1px solid #ccc")
                 .set("border-radius", "10px")  // ✅ add smooth edges
                 .set("padding", "10px")
-                .set("margin", "0");
-
+                .set("margin", "0")
+                .set("background-color", "#1a1a1b")  // Dark background
+                .set("color", "#ffffff");  // White text
 
         commentCardLayout.setWidth("800px");
-        commentCardLayout.getStyle().set("background-color", "#f8f8f8");
 
         // Top: Avatar + User Name + Posted on: Date
         HorizontalLayout topRow = new HorizontalLayout();
         Avatar userAvatar = new Avatar(postData.getUserName());
+        userAvatar.getStyle()
+                .set("background-color", "white")  // Avoid dark background affecting the avatar
+                .set("color", "black")  // Ensure the text/initials stay white
+                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
+
         Span userName = new Span(postData.getUserName());
+        userName.getStyle().set("color", "#ffffff");  // White text
         Span commentTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
+        commentTime.getStyle().set("color", "#ffffff");  // White text
         topRow.add(userAvatar, userName, commentTime);
         topRow.setWidthFull(); // Make the row take full width
         topRow.setJustifyContentMode(JustifyContentMode.START); // Align content to start (left)
@@ -317,7 +385,8 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                 .set("white-space", "pre-wrap")
                 .set("overflow-wrap", "break-word")
                 .set("word-break", "break-word")
-                .set("max-width", "750px"); // optional
+                .set("max-width", "750px")
+                .set("color", "#ffffff");  // White text
         commentContent.setText(postData.getPostContent());
 
         // Display number of likes
@@ -327,18 +396,21 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         likesRow.getStyle()
                 .set("width", "725px"); // ✅ 700px for comment card
 
-// Likes count
+        // Likes count
         Span likesCount = new Span("Liked: " + postData.getLikes());
         likesCount.getStyle()
                 .set("font-size", "14px")
-                .set("color", "#818384 ")
+                .set("color", "#ffffff")  // White text
                 .set("white-space", "nowrap");
 
-
-// Like button avatar
-
+        // Like button avatar
         LikeButton likeButton = new LikeButton(postData);
+        likeButton.getStyle()
+                .set("background-color", "white")  // Avoid dark background affecting the avatar
+                .set("color", "black")  // Ensure the text/initials stay white
+                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
         likesRow.add(likesCount, likeButton);
+
         // Add everything to the layout
         commentCardLayout.add(topRow, commentContent, likesRow);
 
@@ -350,8 +422,10 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
 
     // Define the Reply Card
     public VerticalLayout createReplyCard(Post postData) {
-// Reply card layout container
+        // Reply card layout container
         VerticalLayout replyCardLayout = new VerticalLayout();
+        replyCardLayout.addClassName("hover-card");
+
         replyCardLayout.setAlignItems(Alignment.START);
         replyCardLayout.setSpacing(true);
         replyCardLayout.setPadding(true);
@@ -360,22 +434,28 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                 .set("border", "1px solid #ccc")
                 .set("border-radius", "10px")  // ✅ add smooth edges
                 .set("padding", "10px")
-                .set("background-color", "#f8f8f8");
-
+                .set("background-color", "#1a1a1b")  // Dark background
+                .set("color", "#ffffff");  // White text
 
         Post parentPost = UserPost.findPostById(postData.getParentId());
 
-// 🔝 Parent post info
+        // 🔝 Parent post info
         HorizontalLayout topRow = new HorizontalLayout();
         Avatar originalAvatar = new Avatar(parentPost != null ? parentPost.getUserName() : "Unknown");
+        originalAvatar.getStyle()
+                .set("background-color", "white")
+                .set("color", "black");
+
         Span originalPoster = new Span(parentPost != null ? parentPost.getUserName() : "Unknown");
+        originalPoster.getStyle().set("color", "#ffffff");  // White text
         Span originalTime = new Span("Posted on: " + Post.formatTimestamp(parentPost != null ? parentPost.getTimestamp() : postData.getTimestamp()));
+        originalTime.getStyle().set("color", "#ffffff");  // White text
         topRow.add(originalAvatar, originalPoster, originalTime);
         topRow.setWidthFull();
         topRow.setJustifyContentMode(JustifyContentMode.START);
         topRow.setAlignItems(Alignment.CENTER);
 
-// 💬 Parent post content
+        // 💬 Parent post content
         Div originalPostContent = new Div();
         originalPostContent.getStyle()
                 .set("white-space", "pre-wrap")
@@ -385,10 +465,11 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                 .set("border", "1px solid #ccc")
                 .set("border-radius", "5px")
                 .set("padding", "10px")
-                .set("margin-bottom", "10px");
+                .set("margin-bottom", "10px")
+                .set("color", "#ffffff");  // White text
         originalPostContent.setText(parentPost != null ? parentPost.getPostContent() : "Original post not found");
 
-// ❤️ Likes row for parent post
+        // ❤️ Likes row for parent post
         HorizontalLayout parentLikesRow = new HorizontalLayout();
         if (parentPost != null) {
             parentLikesRow.setWidth("750px");
@@ -398,7 +479,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
             Span parentLikesCount = new Span("Liked: " + parentPost.getLikes());
             parentLikesCount.getStyle()
                     .set("font-size", "14px")
-                    .set("color", "#888")
+                    .set("color", "#ffffff")  // White text
                     .set("white-space", "nowrap");
 
             HorizontalLayout parentLikeButtonWrapper = new HorizontalLayout();
@@ -409,37 +490,40 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
             parentLikesRow.add(parentLikesCount, parentLikeButtonWrapper);
         }
 
-// 🧱 Add parent post section
+        // 🧱 Add parent post section
         replyCardLayout.add(topRow, originalPostContent);
         if (parentPost != null) replyCardLayout.add(parentLikesRow);
 
-// 🔽 Reply input section to reply to the *parent*
+        // 🔽 Reply input section to reply to the *parent*
         if (parentPost != null) {
             replyCardLayout.add(new UserPost().createReplyInputSection(parentPost));
         }
 
-// 🔁 Reply meta info
+        // 🔁 Reply meta info
         HorizontalLayout replyMeta = new HorizontalLayout();
         Avatar replyAvatar = new Avatar(postData.getUserName());
         Span replyUser = new Span(postData.getUserName());
+        replyUser.getStyle().set("color", "#ffffff");  // White text
         Span replyTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
+        replyTime.getStyle().set("color", "#ffffff");  // White text
         replyMeta.add(replyAvatar, replyUser, replyTime);
         replyMeta.setWidthFull();
         replyMeta.setJustifyContentMode(JustifyContentMode.START);
         replyMeta.setAlignItems(Alignment.CENTER);
         replyMeta.getStyle().set("margin-left", "50px");
 
-// 📝 Reply content
+        // 📝 Reply content
         Div replyContent = new Div();
         replyContent.getStyle()
                 .set("white-space", "pre-wrap")
                 .set("overflow-wrap", "break-word")
                 .set("word-break", "break-word")
                 .set("max-width", "750px")
-                .set("margin-left", "50px");
+                .set("margin-left", "50px")
+                .set("color", "#ffffff");  // White text
         replyContent.setText(postData.getPostContent());
 
-// 👍 Likes row for reply post
+        // 👍 Likes row for reply post
         HorizontalLayout likesRow = new HorizontalLayout();
         likesRow.setWidth("700px");
         likesRow.setAlignItems(Alignment.CENTER);
@@ -448,7 +532,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         Span likesCount = new Span("Liked: " + postData.getLikes());
         likesCount.getStyle()
                 .set("font-size", "14px")
-                .set("color", "#888")
+                .set("color", "#ffffff")  // White text
                 .set("white-space", "nowrap");
 
         HorizontalLayout buttonWrapper = new HorizontalLayout();
@@ -458,17 +542,20 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
 
         likesRow.add(likesCount, buttonWrapper);
 
-// Add the reply content
+        // Add the reply content
         replyCardLayout.add(replyMeta, replyContent, likesRow);
 
-// 🔽 Reply input section to reply to this *reply*
+        // 🔽 Reply input section to reply to this *reply*
         replyCardLayout.add(new UserPost().createReplyInputSection(postData));
+
         return replyCardLayout;
     }
 
 
+
     private Component createPostInputCard() {
         VerticalLayout postLayout = new VerticalLayout();
+        postLayout.addClassName("hover-card");
         postLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         postLayout.setSpacing(true);
         postLayout.setPadding(true);
@@ -476,9 +563,9 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         postLayout.getStyle().set("border-radius", "10px");
         postLayout.getStyle().set("padding", "20px");
         postLayout.setWidth("800px");
-        postLayout.getStyle().set("background-color", "#f8f8f8");
+        postLayout.getStyle().set("background-color", "#1a1a1b")  // Dark background
+                .set("color", "#ffffff");  // White text
         postLayout.getStyle().set("padding-top", "10px");
-
 
         // Get current user
         String currentUsername = getLoggedInUsername();
@@ -488,13 +575,16 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         HorizontalLayout topRow = new HorizontalLayout();
         Avatar avatar = new Avatar(currentUsername);
         Span name = new Span(currentUsername);
+        name.getStyle().set("color", "#ffffff");  // White text
         name.getStyle().set("font-weight", "bold");
         topRow.add(avatar, name);
 
         // Second Row: Number of Posts + Likes
         HorizontalLayout statsRow = new HorizontalLayout();
         Span postCount = new Span("Posts: " + user.getPostCount());
+        postCount.getStyle().set("color", "#ffffff");  // White text
         Span likeCount = new Span("Likes: " + user.getLikeCount());
+        likeCount.getStyle().set("color", "#ffffff");  // White text
         statsRow.add(postCount, likeCount);
 
         // Third Row: Text Field
@@ -502,6 +592,10 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         postArea.setWidthFull();
         postArea.setPlaceholder("What's on your mind?");
         postArea.setHeight("120px");
+        postArea.getStyle()
+                .set("background-color", "#2a2a2b")  // Dark input background
+                .set("color", "#ffffff")  // White text
+                .set("border", "1px solid #555");
 
         // Fourth Row: Post Button
         Button postButton = new Button("Post", e -> {

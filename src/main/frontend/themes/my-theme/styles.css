@@ -63,3 +63,17 @@ html, body, #outlet {
      color: inherit !important;                 /* Inherit text color from parent */
      border: none !important;                   /* Remove any borders */
  }
+/* file: frontend/styles/styles.css */
+.hover-card {
+    transition: background-color 0.2s ease, filter 0.2s ease;
+    background-color: #1a1a1b; /* base color */
+    color: white;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+}
+
+/* Hover effect: slightly brighten */
+.hover-card:hover {
+    filter: brightness(1.4); /* Makes it brighter on hover */
+    cursor: pointer; /* Optional: shows pointer cursor on hover */
+}
