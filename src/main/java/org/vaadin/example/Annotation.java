@@ -3,6 +3,9 @@ package org.vaadin.example;
 public class Annotation {
 }
 
+//bio als text für jeden user
+//vorgefehrtigte avatar bilder
+//user seite
 /*
 NEXT:
 hab alles reverted aber jetzt liest der das falsche als text ab

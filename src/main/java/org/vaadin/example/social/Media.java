@@ -33,6 +33,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         setSpacing(false);  // Disable spacing between the components.
         setMargin(false);
         setPadding(false);
+        getStyle().set("background-color", "#1a1a1b");  // Baby blue background
 
         VerticalLayout popoverContent = new VerticalLayout();
         Button logoutButton = new Button("Logout", event -> {
@@ -90,11 +91,13 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         TextField searchField = new TextField();
         searchField.setPlaceholder("Search Communo");  // Placeholder text
         searchField.addClassName("media-textfield");
+        searchField.getElement().getStyle().set("color", "#D7DADC");
+
 
 // Apply styles to the outer TextField container
         searchField.getElement().getStyle()
-                .set("background-color", "#87CEEB")  // Sky Blue for the outer container
-                .set("color", "black")               // Text color inside the field (dark for contrast)
+                .set("background-color", "#6C7A89")  // Sky Blue for the outer container
+                .set("color", "#FFFFFF ")               // Text color inside the field (dark for contrast)
                 .set("border-radius", "20px")        // Rounded corners for the container
                 .set("width", "300px")               // Width of the search bar
                 .set("border", "none")               // Remove the default border
@@ -105,18 +108,18 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         searchField.getElement().getChildren()
                 .filter(child -> child.getTag().equals("input"))  // Find the <input> element
                 .forEach(input -> input.getStyle()
-                        .set("background-color", "#87CEEB")  // Sky Blue for the inner input field (to match the container)
+                        .set("background-color", "#FFFFFF   ")  // Sky Blue for the inner input field (to match the container)
                         .set("border-radius", "20px")        // Rounded corners for the input field (to match container)
                         .set("border", "none")               // Remove default border from the input field
-                        .set("color", "black")               // Text color in the input (dark for contrast)
+                        .set("color", "#FFFFFF ")               // Text color in the input (dark for contrast)
                         .set("padding", "0 15px")            // Padding inside the input field
                 );
-
 
 
         // Fancy "Communo" title
         Span title = new Span("Communo");
         title.getStyle()
+                .setWidth("179px")
                 .set("font-family", "'Segoe Script', cursive")
                 .set("font-size", "28px")
                 .set("font-weight", "bold")
@@ -131,8 +134,10 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
 
         // Apply baby blue background without affecting text color
         rootLayout.getStyle()
-                .set("background-color", "#ADD8E6")  // Baby blue background
+                .set("border-bottom", "1px solid #666")
+                .set("background-color", "#1a1a1b")  // Baby blue background
                 .set("color", "#333");  // Text remains dark grey, unaffected by the background
+
 
         // Sub-layouts for left, center, and right
         HorizontalLayout leftLayout = new HorizontalLayout(title);
@@ -216,70 +221,65 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         content.setFlexGrow(1, postList);  // Make the post list grow to fill available space.
 
         HorizontalLayout layout = new HorizontalLayout();
-        layout.setSizeFull();  // Make the layout stretch to fill the available width
-        layout.setAlignItems(Alignment.CENTER);  // Center the content vertically within the layout
+        layout.setSizeFull();
+        layout.setAlignItems(Alignment.CENTER);
+        layout.getStyle().set("position", "relative"); // Make it a positioning context
 
-
-// Create the sidebar layout
+// ===== Sidebar (Overlay) =====
         VerticalLayout sideBar = new VerticalLayout();
-        sideBar.setHeightFull();
-        sideBar.setWidth("25px"); // Sidebar width
+        sideBar.setHeight("95%");
+        sideBar.setWidth("200px");
+        sideBar.getStyle()
+                .set("position", "absolute")  // Detach from layout flow
+                .set("bottom", "0")
+                .set("left", "0")
+                .set("z-index", "1000")
+                .set("border-top", "1px solid #666")
+                .set("border-right", "1px solid #666")
+                .set("background-color", "#1a1a1b")
+                .set("color", "#FFFFFF");
 
-// Create individual horizontal layouts with avatars and text
-        HorizontalLayout avatarRow1 = new HorizontalLayout();
-        Avatar avatar1 = new Avatar("User 1");
-        Div text1 = new Div();
-        text1.setText("Home");  // Setting the text inside the Div
-        avatarRow1.add(avatar1, text1);
-        avatarRow1.setWidthFull();
-        avatarRow1.setPadding(false);
-        avatarRow1.setSpacing(true);
+// Icons and Labels
+        Icon homeIcon = VaadinIcon.BUILDING.create();
+        Span homeText = new Span("Home");
+        HorizontalLayout homeLayout = new HorizontalLayout(homeIcon, homeText);
 
-        HorizontalLayout avatarRow2 = new HorizontalLayout();
-        Avatar avatar2 = new Avatar("User 2");
-        Div text2 = new Div();
-        text2.setText("Popular");
-        avatarRow2.add(avatar2, text2);
-        avatarRow2.setWidthFull();
-        avatarRow2.setPadding(false);
-        avatarRow2.setSpacing(true);
+        Icon popularIcon = VaadinIcon.LINE_CHART.create();
+        Span popularText = new Span("Popular");
+        HorizontalLayout popularLayout = new HorizontalLayout(popularIcon, popularText);
 
-        HorizontalLayout avatarRow3 = new HorizontalLayout();
-        Avatar avatar3 = new Avatar("User 3");
-        Div text3 = new Div();
-        text3.setText("For you");
-        avatarRow3.add(avatar3, text3);
-        avatarRow3.setWidthFull();
-        avatarRow3.setPadding(false);
-        avatarRow3.setSpacing(true);
+        Icon forYouIcon = VaadinIcon.SEARCH.create();
+        Span forYouText = new Span("Recommended");
+        HorizontalLayout forYouLayout = new HorizontalLayout(forYouIcon, forYouText);
 
-        HorizontalLayout avatarRow4 = new HorizontalLayout();
-        Avatar avatar4 = new Avatar("User 4");
-        Div text4 = new Div();
-        text4.setText("All");
-        avatarRow4.add(avatar4, text4);
-        avatarRow4.setWidthFull();
-        avatarRow4.setPadding(false);
-        avatarRow4.setSpacing(true);
+        Icon allIcon = VaadinIcon.GLOBE.create();
+        Span allText = new Span("All");
+        HorizontalLayout allLayout = new HorizontalLayout(allIcon, allText);
 
-// Add the horizontal layouts to the sidebar
-        sideBar.add(avatarRow1, avatarRow2, avatarRow3, avatarRow4);
+// Add all to sidebar
+        sideBar.add(homeLayout, popularLayout, forYouLayout, allLayout);
 
-
+// ===== Filler (Overlay) =====
         VerticalLayout filler = new VerticalLayout();
-        filler.setHeightFull();
-        filler.setWidth("25");
+        filler.setHeight("95%");
+        filler.setWidth("200px");
+        filler.getStyle()
+                .set("position", "absolute")
+                .set("bottom", "0")
+                .set("right", "0")
+                .set("border-top", "1px solid #666")
+                .set("background-color", "#1a1a1b");
+
         Button button2 = new Button("test");
         filler.add(button2);
 
-        layout.add(sideBar, content, filler);
+// ===== Content =====
+        layout.add(content); // Only content is part of layout flow
 
-        add(rootLayout, layout);  // Add root layout and content to the view.
-
+// Add overlays after layout
+        add(rootLayout, layout, sideBar, filler);  // Add overlays separately
 
     }
-
-
 
     // Define the Comment Card
     public VerticalLayout createCommentCard(Post postData) {
@@ -331,7 +331,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         Span likesCount = new Span("Liked: " + postData.getLikes());
         likesCount.getStyle()
                 .set("font-size", "14px")
-                .set("color", "#888")
+                .set("color", "#818384 ")
                 .set("white-space", "nowrap");
 
 
