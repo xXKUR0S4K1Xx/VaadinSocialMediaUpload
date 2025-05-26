@@ -83,6 +83,19 @@ public class Post {
         likes++; // Increment like count regardless
     }
 
+    public static String encodeContent(String content) {
+        if (content == null) return "";
+        return content.replace("\\", "\\\\")  // Escape backslashes first
+                .replace("\n", "\\n")  // Escape line breaks
+                .replace("\r", "");    // Optionally remove carriage returns
+    }
+
+    public static String decodeContent(String content) {
+        if (content == null) return "";
+        return content.replace("\\n", "\n")
+                .replace("\\\\", "\\");  // Unescape backslashes last
+    }
+
     // Setter for the likes field (manually override the count)
     public void setLikes(int likes) {
         this.likes = likes;
@@ -119,7 +132,7 @@ public class Post {
                 parentId,
                 String.valueOf(likes),
                 parentUser == null ? "" : parentUser,
-                postContent == null ? "" : postContent,
+                postContent == null ? "" : encodeContent(postContent),
                 timestamp == null ? "" : timestamp,
                 userName == null ? "" : userName,
                 likedUsers == null ? "" : likedUsers

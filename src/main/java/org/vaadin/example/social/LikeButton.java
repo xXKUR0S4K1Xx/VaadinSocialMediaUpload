@@ -1,7 +1,8 @@
 package org.vaadin.example.social;
 
-import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,30 +17,41 @@ public class LikeButton extends Div {
         this.post = post;
 
         // Create Avatar for the like icon
-        Avatar likeIcon = new Avatar();
-        likeIcon.setImage("https://cdn-icons-png.flaticon.com/512/126/126473.png"); // Like icon
-        likeIcon.setName("Like");
-        likeIcon.setWidth("24px");
-        likeIcon.setHeight("24px");
-        likeIcon.getStyle().set("cursor", "pointer");  // Change cursor to pointer on hover
+        // Create the Vaadin thumbs-up icon
+        Icon likeIcon = VaadinIcon.THUMBS_UP.create();
+        likeIcon.setSize("20px");
+        likeIcon.getStyle()
+                .set("color", "#A0B3B6")
+                .set("cursor", "pointer")
+                .set("background", "transparent")       // Ensures icon itself has no background
+                .set("box-shadow", "none")              // Removes any drop shadow
+                .set("border", "none")                  // Removes border
+                .set("padding", "0")
+                .set("margin", "0");
 
-        // Create a Div to hold the Avatar (for click ability)
-        Div wrapper = new Div();
-        wrapper.add(likeIcon);
+// Wrap the icon in a Div to make it clickable
+        Div wrapper = new Div(likeIcon);
         wrapper.setWidth("24px");
         wrapper.setHeight("24px");
         wrapper.getStyle()
+                .set("display", "flex")
+                .set("align-items", "center")
+                .set("justify-content", "center")
+                .set("background-color", "transparent") // Fully transparent background
                 .set("border", "none")
-                .set("box-shadow", "none");
+                .set("box-shadow", "none")
+                .set("padding", "0")
+                .set("margin", "0");
 
-        // Add click listener to the wrapper Div
+
+// Add click listener to the wrapper
         wrapper.addClickListener(event -> likePost());
 
-        // Add wrapper to the main LikeButton container
+// Add wrapper to the layout/container
         add(wrapper);
     }
 
-    private void likePost() {
+        private void likePost() {
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
             System.out.println("No user logged in!");

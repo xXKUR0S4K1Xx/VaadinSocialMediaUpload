@@ -51,18 +51,30 @@ html, body, #outlet {
   padding: 0;
   height: 100%;
 }
-/* Set the background and text color to transparent, ensuring no interference */
- vaadin-text-field::part(input-field) {
-     background-color: transparent !important; /* Transparent background */
-     color: inherit !important;                 /* Inherit text color from parent */
-     border: none !important;                   /* Remove any borders */
- }
+vaadin-text-field::part(input-field) {
+    background-color: transparent !important;
+    color: inherit !important;
+    border: none !important;
+}
 
- vaadin-text-field::part(input) {
-     background-color: transparent !important; /* Transparent background for the input area */
-     color: inherit !important;                 /* Inherit text color from parent */
-     border: none !important;                   /* Remove any borders */
- }
+vaadin-text-field::part(input) {
+    background-color: transparent !important;
+    color: inherit !important;
+    border: none !important;
+}
+
+/* ✅ Add these for TextArea */
+vaadin-text-area::part(input-field) {
+    background-color: transparent !important;
+    color: inherit !important;
+    border: none !important;
+}
+
+vaadin-text-area::part(textarea) {
+    background-color: transparent !important;
+    color: inherit !important;
+    border: none !important;
+}
 /* file: frontend/styles/styles.css */
 .hover-card {
     transition: background-color 0.2s ease, filter 0.2s ease;

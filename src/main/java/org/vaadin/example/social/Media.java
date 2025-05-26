@@ -18,6 +18,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,19 +48,28 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                                  .set("border-radius", "16px")  // Adjust the value as needed to round the corners
                                  .set("overflow", "hidden"); // This clips the content to the rounded corners
 
-
         Avatar userAvatar2 = new Avatar(username);
         userAvatar2.getStyle()
                 .set("background-color", "white")
                 .set("color", "black")
                 .set("border", "1px solid black");
 
-        Div userpageDiv = new Div();
-        userpageDiv.setText("View Profile");
-        userpageDiv.getStyle()
+// Wrap avatar in RouterLink
+        RouterLink avatarLink = new RouterLink();
+        avatarLink.setRoute(UserPage.class); // replace with actual class
+        avatarLink.add(userAvatar2);
+
+// Optional: remove link styling
+        avatarLink.getStyle().set("text-decoration", "none");
+        RouterLink userpageLink = new RouterLink();
+        userpageLink.setText("View Profile");
+        userpageLink.setRoute(UserPage.class); // Replace with your actual target view class
+        userpageLink.getStyle()
                 .set("font-weight", "bold")
                 .set("font-size", "14px")
-                .set("color", "White");
+                .set("color", "white")
+                .set("text-decoration", "none"); // optional: remove underline
+
 
         Div usernameDiv = new Div();
         usernameDiv.setText(username); // Use the logged-in username
@@ -67,7 +77,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                 .set("font-size", "13px")
                 .set("color", "#7e8f96");
 
-        VerticalLayout userInfoLayout = new VerticalLayout(userpageDiv, usernameDiv);
+        VerticalLayout userInfoLayout = new VerticalLayout(userpageLink, usernameDiv);
         userInfoLayout.setPadding(false);
         userInfoLayout.setSpacing(false);
         userInfoLayout.setMargin(false);
@@ -77,7 +87,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         userRow.setSpacing(true);  // Add some space between Avatar and the user info
 
 // === Add the Second Avatar to a Different Layout or Row ===
-        HorizontalLayout secondAvatarLayout = new HorizontalLayout(userAvatar2, userInfoLayout);
+        HorizontalLayout secondAvatarLayout = new HorizontalLayout(avatarLink, userInfoLayout);
         secondAvatarLayout.setAlignItems(FlexComponent.Alignment.CENTER);  // Center the second avatar
         secondAvatarLayout.setSpacing(true);
 
@@ -138,7 +148,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
 
         // Create the search bar (TextField)
         TextField searchField = new TextField();
-        searchField.setPlaceholder("Search Communo");  // Placeholder text
+        searchField.setPlaceholder("Search Semaino");  // Placeholder text
         searchField.addClassName("media-textfield");
         searchField.getElement().getStyle().set("color", "#D7DADC");
 
@@ -166,7 +176,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
 
 
         // Fancy "Communo" title
-        Span title = new Span("Communo");
+        Span title = new Span("Semaino");
         title.getStyle()
                 .setWidth("179px")
                 .set("font-family", "'Segoe Script', cursive")
@@ -660,13 +670,13 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
 
         // Third Row: Text Field
         TextArea postArea = new TextArea();
+        postArea.addClassName("media-textfield");
+        postArea.getElement().getStyle()
+                .set("background-color", "#6c7a89")
+                .set("color", "#A0B3B6");  // Optional: set text color to black for contrast
         postArea.setWidthFull();
         postArea.setPlaceholder("What's on your mind?");
         postArea.setHeight("120px");
-        postArea.getStyle()
-                .set("background-color", "#2a2a2b")  // Dark input background
-                .set("color", "#ffffff")  // White text
-                .set("border", "1px solid #555");
 
         // Fourth Row: Post Button
         Button postButton = new Button("Post", e -> {

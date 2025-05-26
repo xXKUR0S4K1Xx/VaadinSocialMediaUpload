@@ -18,7 +18,11 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -97,7 +101,7 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
 
         // Create the search bar (TextField)
         TextField searchField = new TextField();
-        searchField.setPlaceholder("Search Communo");  // Placeholder text
+        searchField.setPlaceholder("Search Semaino");  // Placeholder text
         searchField.addClassName("media-textfield");
         searchField.getElement().getStyle().set("color", "#D7DADC");
 
@@ -125,13 +129,15 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
 
 
         // Fancy "Communo" title
-        Span title = new Span("Communo");
+        // Replace the Span with a RouterLink
+        RouterLink title = new RouterLink("Semaino", Media.class);
         title.getStyle()
                 .setWidth("179px")
                 .set("font-family", "'Segoe Script', cursive")
                 .set("font-size", "28px")
                 .set("font-weight", "bold")
-                .set("color", "#FFFFFF");  // Set headline color to white
+                .set("color", "#FFFFFF")
+                .set("text-decoration", "none"); // Optional: remove underline
 
         // Create root layout
         HorizontalLayout rootLayout = new HorizontalLayout();
@@ -187,7 +193,7 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
         // Create list: first the post input card, then the posts
         List<Object> items = new ArrayList<>();  // Create a list to store the input card and posts.
         items.add(inputCard);  // Add the input card to the list.
-        items.addAll(UserPost.readPostsFromFiles());  // Add posts read from files.
+        items.addAll(UserPost.readPostsForUser(username));
 
         postList.setItems(items);  // Set the list of items (input card + posts) to the VirtualList.
         postList.getElement().getStyle().set("overflow", "hidden");
@@ -667,8 +673,14 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
         styleInputCard(inputCard);
 
         List<Object> items = new ArrayList<>();
+        String username = "Guest"; // default fallback
+        try {
+            username = Files.readString(Paths.get("loggedinuser.txt")).trim();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         items.add(inputCard);
-        items.addAll(allPosts);
+        items.addAll(UserPost.readPostsForUser(username));
         postList.setItems(items);
     }
 
