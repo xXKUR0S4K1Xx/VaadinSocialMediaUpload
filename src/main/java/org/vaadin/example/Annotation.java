@@ -2,15 +2,53 @@ package org.vaadin.example;
 
 public class Annotation {
 }
-
-//bio als text für jeden user
-//vorgefehrtigte avatar bilder
-//user seite
 /*
-NEXT:
-hab alles reverted aber jetzt liest der das falsche als text ab
-Sort function by top posts
 
+user seite:
+     /Avatar   Name        / Name          /
+     /Posts    New   Top   / Bio       /
+     /Posts                / Bio
+     ?????                 /Upvotes
+     ?????                 /Followers
+
+
+                      Posts/
+
+
+bio als text für jeden user:
+    - In Userpage
+
+vorgefehrtigte avatar bilder:
+    - save avatar picturs somewhere and make them selectable in a drop down menu maybe?
+    Maybe it's necessary to save the location and name in the UserFile
+
+Notifications:
+    - for every reply or like
+    - seek ParentUser
+    - on ParenProfile set number of replies or likes +1
+    - set "# +Text" for each reply
+    - set "# +Text" for each like (your text!)
+    - Show Notifications by number
+    - when clicked open a vitual list
+        -for each like notification say "*User* liked your post: *PostText*"
+        -for each reply notification say "*User* replied to your Post: *Reply*"
+
+Wie speichern?
+    When you like or reply to a Post:
+        - go to User.Posts (of the person you replied to or liked)
+            -First line only: "t#" or "f#" If its then there are no notifications
+                -It's set to f every time one clicks on the notfication bell
+                -It's set to t every time somebody likes or replies to your post
+            -set "PostId#"
+            -set "1#" for checked and "0#" for unchecked // is it checked? 1 for yes or 0 for no
+            -set "l#" for like and "r#" for reply
+            -set "Username#" for Person who replied or liked
+            -next line
+
+ */
+
+
+/*
  Features (erste Stufe)
 Startseite mit Beitragsübersicht
 

@@ -85,6 +85,57 @@ public class UserPost {
         return posts;
     }
 
+    public static List<Post> readPostsSortedByLikes() {
+        List<Post> posts = new ArrayList<>();
+
+        try {
+            Files.list(Paths.get(postsDirectory))
+                    .filter(Files::isRegularFile)
+                    .forEach(file -> {
+                        try {
+                            List<String> lines = Files.readAllLines(file);
+                            for (String line : lines) {
+                                String[] parts = line.split("#", -1);
+
+                                if (parts.length > 8) {
+                                    parts = Arrays.copyOf(parts, 8);
+                                    line = String.join("#", parts);
+                                }
+
+                                if (parts.length == 8) {
+                                    try {
+                                        Post post = new Post(
+                                                parts[0],
+                                                parts[1],
+                                                Integer.parseInt(parts[2]),
+                                                parts[3],
+                                                parts[4],
+                                                parts[5],
+                                                parts[6],
+                                                parts[7]
+                                        );
+                                        posts.add(post);
+                                    } catch (Exception e) {
+                                        System.err.println("Invalid post data: " + line);
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        } catch (IOException e) {
+                            System.err.println("Error reading file: " + file);
+                            e.printStackTrace();
+                        }
+                    });
+        } catch (IOException e) {
+            System.err.println("Error listing files in directory: " + postsDirectory);
+            e.printStackTrace();
+        }
+
+        // ✅ Sort by number of likes descending
+        posts.sort((p1, p2) -> Integer.compare(p2.getLikes(), p1.getLikes()));
+
+        return posts;
+    }
 
 
 

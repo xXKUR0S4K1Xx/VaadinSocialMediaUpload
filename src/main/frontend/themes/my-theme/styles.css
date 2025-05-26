@@ -77,3 +77,14 @@ html, body, #outlet {
     filter: brightness(1.4); /* Makes it brighter on hover */
     cursor: pointer; /* Optional: shows pointer cursor on hover */
 }
+.centered-button {
+  width: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+::part(overlay) {
+  background-color: #1a1a1b;
+  border-radius: 8px;
+}

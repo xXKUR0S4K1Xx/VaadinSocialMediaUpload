@@ -24,72 +24,31 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-@Route("media")  // Defines the route for this view. When navigating to '/media', this view is displayed.
-public class Media extends VerticalLayout {  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
+@Route("userpage")  // Defines the route for this view. When navigating to '/media', this view is displayed.
+public class UserPage extends VerticalLayout {  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
 
     private int sortMode = 0; // 0 = new, 1 = top
     private VirtualList<Object> postList;
     private List<Post> allPosts;
 
-    public Media() {  // Constructor that initializes the Media view.
+    public UserPage() {  // Constructor that initializes the Media view.
         setSizeFull();  // Set the layout to take up the entire available space.
         setAlignItems(Alignment.CENTER);  // Align child components (like cards) to the center horizontally.
         setSpacing(false);  // Disable spacing between the components.
         setMargin(false);
         setPadding(false);
         getStyle().set("background-color", "#1a1a1b");  // Baby blue background
-        String username = getLoggedInUsername();
 
 
 
         VerticalLayout popoverContent = new VerticalLayout();
-        popoverContent.getStyle().set("background-color", "#282b30")  // Apply the color you need
-                                 .set("border-radius", "16px")  // Adjust the value as needed to round the corners
-                                 .set("overflow", "hidden"); // This clips the content to the rounded corners
-
-
-        Avatar userAvatar2 = new Avatar(username);
-        userAvatar2.getStyle()
-                .set("background-color", "white")
-                .set("color", "black")
-                .set("border", "1px solid black");
-
-        Div userpageDiv = new Div();
-        userpageDiv.setText("View Profile");
-        userpageDiv.getStyle()
-                .set("font-weight", "bold")
-                .set("font-size", "14px")
-                .set("color", "White");
-
-        Div usernameDiv = new Div();
-        usernameDiv.setText(username); // Use the logged-in username
-        usernameDiv.getStyle()
-                .set("font-size", "13px")
-                .set("color", "#7e8f96");
-
-        VerticalLayout userInfoLayout = new VerticalLayout(userpageDiv, usernameDiv);
-        userInfoLayout.setPadding(false);
-        userInfoLayout.setSpacing(false);
-        userInfoLayout.setMargin(false);
-
-        HorizontalLayout userRow = new HorizontalLayout(userInfoLayout);
-        userRow.setAlignItems(FlexComponent.Alignment.CENTER);  // Center vertically
-        userRow.setSpacing(true);  // Add some space between Avatar and the user info
-
-// === Add the Second Avatar to a Different Layout or Row ===
-        HorizontalLayout secondAvatarLayout = new HorizontalLayout(userAvatar2, userInfoLayout);
-        secondAvatarLayout.setAlignItems(FlexComponent.Alignment.CENTER);  // Center the second avatar
-        secondAvatarLayout.setSpacing(true);
-
-
         Button logoutButton = new Button("Logout", event -> {
             // Implement logout logic here
             getUI().ifPresent(ui -> ui.navigate("login"));
         });
-        logoutButton.getStyle().set("color", "white");  // Set text color to white
+        popoverContent.add(logoutButton);
 
-        popoverContent.add(secondAvatarLayout, logoutButton);
-
+        String username = getLoggedInUsername();
         Avatar userAvatar = new Avatar(username);
         userAvatar.getStyle()
                 .set("background-color", "white")  //White background
@@ -332,7 +291,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                 .set("border-radius", "4px")
                 .set("background-color", "#2a2a2a")
                 .set("color", "#ffffff")
-               // .set("width", "fit-content")
+                // .set("width", "fit-content")
                 .setWidth("75px"); // Makes it take full width of its container
 
 
