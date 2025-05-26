@@ -100,3 +100,11 @@ vaadin-text-area::part(textarea) {
   background-color: #1a1a1b;
   border-radius: 8px;
 }
+.no-border-icon, .no-border-wrapper {
+    background-color: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}

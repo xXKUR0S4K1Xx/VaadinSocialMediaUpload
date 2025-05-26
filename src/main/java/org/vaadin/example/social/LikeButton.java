@@ -16,39 +16,25 @@ public class LikeButton extends Div {
     public LikeButton(Post post) {
         this.post = post;
 
-        // Create Avatar for the like icon
-        // Create the Vaadin thumbs-up icon
-        Icon likeIcon = VaadinIcon.THUMBS_UP.create();
-        likeIcon.setSize("20px");
+        Icon likeIcon = VaadinIcon.THUMBS_UP_O.create();
+        likeIcon.addClassName("no-border-icon");
+        this.addClassName("no-border-wrapper");
+        likeIcon.setSize("10px");
         likeIcon.getStyle()
                 .set("color", "#A0B3B6")
                 .set("cursor", "pointer")
-                .set("background", "transparent")       // Ensures icon itself has no background
-                .set("box-shadow", "none")              // Removes any drop shadow
-                .set("border", "none")                  // Removes border
+                .set("background-color", "#1a1a1b")
                 .set("padding", "0")
-                .set("margin", "0");
-
-// Wrap the icon in a Div to make it clickable
-        Div wrapper = new Div(likeIcon);
-        wrapper.setWidth("24px");
-        wrapper.setHeight("24px");
-        wrapper.getStyle()
+                .set("margin", "0")
+                .set("width", "24px")
+                .set("height", "24px")
                 .set("display", "flex")
                 .set("align-items", "center")
-                .set("justify-content", "center")
-                .set("background-color", "transparent") // Fully transparent background
-                .set("border", "none")
-                .set("box-shadow", "none")
-                .set("padding", "0")
-                .set("margin", "0");
+                .set("justify-content", "center");
 
+        likeIcon.addClickListener(event -> likePost());
 
-// Add click listener to the wrapper
-        wrapper.addClickListener(event -> likePost());
-
-// Add wrapper to the layout/container
-        add(wrapper);
+        add(likeIcon);
     }
 
         private void likePost() {
