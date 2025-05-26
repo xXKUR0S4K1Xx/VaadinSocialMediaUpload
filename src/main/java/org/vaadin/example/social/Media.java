@@ -229,6 +229,25 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         inputCard.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
         inputCard.getElement().getStyle().set("margin-top", "15px");
 
+        // Create the button
+        Button middleButton = new Button("Sort");
+        middleButton.getStyle()
+                .set("margin", "0")
+                .set("padding", "0")
+                .set("height", "20px");
+
+// Create the horizontal layout wrapper and center the button
+        HorizontalLayout middleBar = new HorizontalLayout(middleButton);
+        middleBar.setWidth("800px"); // Fixed width
+        middleBar.setHeight("20px");
+        middleBar.getElement().getStyle().set("margin-left", "auto");  // Center the card horizontally.
+        middleBar.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
+        middleBar.getElement().getStyle().set("margin-top", "10px");  // Center the card horizontally.
+        middleBar.setJustifyContentMode(FlexComponent.JustifyContentMode.START); // Center the button
+        middleBar.setPadding(false);
+        middleBar.getStyle()
+                .set("background-color", "#2a1a1b"); // Optional: match card background
+
         // Virtual List of posts
         postList = new VirtualList<>();
         postList.getElement().getStyle().set("scrollbar-gutter", "stable both-edges");  // Ensures the scrollbar appears on both edges.
@@ -237,6 +256,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                 .set("margin", "0");
         // Create list: first the post input card, then the posts
         List<Object> items = new ArrayList<>();  // Create a list to store the input card and posts.
+        items.add(middleBar); // Middle bar with button
         items.add(inputCard);  // Add the input card to the list.
         items.addAll(UserPost.readPostsFromFiles());  // Add posts read from files.
 
@@ -333,7 +353,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
 
 // Create a "Search" div to act like a button
         Div searchDiv = new Div();
-        searchDiv.setText("Search");
+        searchDiv.setText("sort");
         searchDiv.getStyle()
                 .set("cursor", "pointer")
                 .set("text-align", "center")

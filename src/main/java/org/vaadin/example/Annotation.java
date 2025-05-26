@@ -4,15 +4,15 @@ public class Annotation {
 }
 /*
 
-user seite:
-     /Avatar   Name        / Name          /
-     /Posts    New   Top   / Bio       /
-     /Posts                / Bio
-     ?????                 /Upvotes
-     ?????                 /Followers
+Als nächsters:
+Switch the sort button into the new layout.
+Should display Sort
+when you click it should show a dropdown menu with: top (und häkchen icon)
+                                                    bottom.
+häkchen je nach sort modus otherwise invisible.
+dann background color zurück auf 1a1a1b
 
 
-                      Posts/
 
 
 bio als text für jeden user:
