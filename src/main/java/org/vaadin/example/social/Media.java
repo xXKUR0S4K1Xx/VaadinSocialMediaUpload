@@ -184,13 +184,18 @@ public class Media extends VerticalLayout {
 
 
         // Fancy "Communo" title
-        Span title = new Span("Semaino");
-        title.getStyle()
-                .setWidth("179px")
+        RouterLink clickableTitle = new RouterLink("Semaino", Media.class);
+        clickableTitle.getStyle()
                 .set("font-family", "'Segoe Script', cursive")
                 .set("font-size", "28px")
                 .set("font-weight", "bold")
-                .set("color", "#FFFFFF");  // Set headline color to white
+                .set("color", "#FFFFFF")
+                .set("text-decoration", "none")
+                .set("cursor", "pointer")
+                .setWidth("179px");
+
+
+// Add this `clickableTitle` to your layout instead of the Span directly
 
         // Create root layout
         HorizontalLayout rootLayout = new HorizontalLayout();
@@ -207,7 +212,7 @@ public class Media extends VerticalLayout {
 
 
         // Sub-layouts for left, center, and right
-        HorizontalLayout leftLayout = new HorizontalLayout(title);
+        HorizontalLayout leftLayout = new HorizontalLayout(clickableTitle);
         leftLayout.setJustifyContentMode(JustifyContentMode.START);
         leftLayout.setWidthFull();
         leftLayout.getElement().getStyle().set("margin-left", "20px");
@@ -720,12 +725,20 @@ public class Media extends VerticalLayout {
         // Fourth Row: Post Button
         Button postButton = new Button("Post", e -> {
             if (!postArea.isEmpty()) {
-                Post createdPost = UserPost.createAndSaveNewPost(postArea.getValue());
-                UserPost.savePostToUserDirectory(createdPost, false);
+                UserPost.createAndSaveNewPost(postArea.getValue());
                 postArea.clear();
-                getUI().ifPresent(ui -> ui.getPage().reload());
+                getUI().ifPresent(ui -> ui.getPage().reload()); // simple reload to refresh posts
             }
         });
+
+        postButton.getStyle()
+                .set("background-color", "#E0E0E0")  // light grayish-white
+                .set("color", "#333333")             // dark text for contrast
+                .set("border", "none")
+                .set("border-radius", "4px")
+                .set("font-weight", "bold")
+                .set("box-shadow", "none");          // keep it flat (dull look)
+
 
         postLayout.add(topRow, statsRow, postArea, postButton);
         return postLayout;

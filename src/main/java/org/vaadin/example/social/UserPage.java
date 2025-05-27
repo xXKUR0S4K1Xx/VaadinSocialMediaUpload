@@ -183,15 +183,16 @@ public class UserPage extends VerticalLayout {
                         .set("padding", "0 15px")            // Padding inside the input field
                 );
 
-
-        // Fancy "Communo" title
-        Span title = new Span("Semaino");
-        title.getStyle()
-                .setWidth("179px")
+        //click on the title to get back to main
+        RouterLink clickableTitle = new RouterLink("Semaino", Media.class);
+        clickableTitle.getStyle()
                 .set("font-family", "'Segoe Script', cursive")
                 .set("font-size", "28px")
                 .set("font-weight", "bold")
-                .set("color", "#FFFFFF");  // Set headline color to white
+                .set("color", "#FFFFFF")
+                .set("text-decoration", "none")
+                .set("cursor", "pointer")
+                .setWidth("179px");
 
         // Create root layout
         HorizontalLayout rootLayout = new HorizontalLayout();
@@ -208,7 +209,7 @@ public class UserPage extends VerticalLayout {
 
 
         // Sub-layouts for left, center, and right
-        HorizontalLayout leftLayout = new HorizontalLayout(title);
+        HorizontalLayout leftLayout = new HorizontalLayout(clickableTitle);
         leftLayout.setJustifyContentMode(JustifyContentMode.START);
         leftLayout.setWidthFull();
         leftLayout.getElement().getStyle().set("margin-left", "20px");
@@ -725,6 +726,15 @@ public class UserPage extends VerticalLayout {
                 getUI().ifPresent(ui -> ui.getPage().reload()); // simple reload to refresh posts
             }
         });
+
+        postButton.getStyle()
+                .set("background-color", "#E0E0E0")  // light grayish-white
+                .set("color", "#333333")             // dark text for contrast
+                .set("border", "none")
+                .set("border-radius", "4px")
+                .set("font-weight", "bold")
+                .set("box-shadow", "none");          // keep it flat (dull look)
+
 
         postLayout.add(topRow, statsRow, postArea, postButton);
         return postLayout;
