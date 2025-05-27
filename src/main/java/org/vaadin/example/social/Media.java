@@ -28,9 +28,14 @@ import java.util.TimerTask;
 @Route("media")  // Defines the route for this view. When navigating to '/media', this view is displayed.
 public class Media extends VerticalLayout {  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
 
+    private Button sortNewButton;
+    private Button sortTopButton;
+    private HorizontalLayout middleBar;
     private int sortMode = 0; // 0 = new, 1 = top
     private VirtualList<Object> postList;
     private List<Post> allPosts;
+    private Button sortButton;
+
 
     public Media() {  // Constructor that initializes the Media view.
         setSizeFull();  // Set the layout to take up the entire available space.
@@ -229,16 +234,107 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         inputCard.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
         inputCard.getElement().getStyle().set("margin-top", "15px");
 
-        // Create the button
-        Button middleButton = new Button("Sort");
-        middleButton.getStyle()
+        // === Sort Button (Trigger) ===
+        sortButton = new Button("New");
+        sortButton.addClassName("glow-hover");
+        sortButton.getStyle()
                 .set("margin", "0")
                 .set("padding", "0")
-                .set("height", "20px");
+                .set("height", "20px")
+                .set("color", "#686b6e") // Set text color
+                .set("font-size", "13px");       // Make text smaller (half of typical 20px)
+
+        Div sortButtonWrapper = new Div();
+        sortButtonWrapper.addClassName("elliptical-glow-wrapper");
+
+// Add the sortButton inside the wrapper
+        sortButtonWrapper.add(sortButton);
+// === Popover Setup ===
+        Popover sortPopoverPopup = new Popover();
+        sortPopoverPopup.addClassName("glow-hover");
+        sortPopoverPopup.setTarget(sortButton); // This is the trigger
+        sortPopoverPopup.setPosition(PopoverPosition.BOTTOM);
+        sortPopoverPopup.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
+
+// === Popover Content ===
+        VerticalLayout sortPopoverContent = new VerticalLayout();
+        sortPopoverContent.setWidthFull(); // Ensure popup content fills available width
+        sortPopoverContent.setPadding(false);
+        sortPopoverContent.setSpacing(false);
+        sortPopoverContent.getStyle()
+                .set("background-color", "#282b30")
+                .set("color", "#ffffff")
+                .set("min-width", "120px")
+                .set("text-align", "left")
+                .set("border-radius", "8px");  // 👈 Rounded corners
+
+
+// === Header using Div instead of Label ===
+        Div sortHeader = new Div();
+        sortHeader.setText("Sort by:");
+        sortHeader.getStyle().set("font-weight", "bold")
+                             .set("color", "#686b6e");
+
+// === Sort Options ===
+        sortNewButton = new Button("New");
+        sortNewButton.setWidthFull(); // Ensures the button spans full width
+        sortNewButton.addClassName("popup-hover-item");
+        sortNewButton.getStyle().set("width", "100%")
+                                .set("color", "#D7DADC");
+
+
+        sortTopButton = new Button("Top");
+        sortTopButton.setWidthFull();
+        sortTopButton.addClassName("popup-hover-item");
+        sortTopButton.getStyle().set("width", "100%")
+                                .set("color", "#D7DADC");
+
+// === Assemble Popover ===
+        sortPopoverContent.add(sortHeader, sortNewButton, sortTopButton);
+        sortPopoverPopup.add(sortPopoverContent);
+
+// === Track Popover Open State ===
+        boolean[] isSortPopoverOpen = {false};
+
+// === Toggle with Delay to Prevent Vaadin Sync Issues ===
+        sortButton.getElement().addEventListener("click", e -> {
+            if (!isSortPopoverOpen[0]) {
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        getUI().ifPresent(ui -> ui.access(() -> {
+                            sortPopoverPopup.setOpened(true);
+                            isSortPopoverOpen[0] = true;
+                        }));
+                    }
+                }, 100); // 100ms delay
+            } else {
+                sortPopoverPopup.setOpened(false);
+                isSortPopoverOpen[0] = false;
+            }
+        });
+
+// === Button Logic ===
+        sortNewButton.addClickListener(e -> {
+            sortMode = 0;
+            loadPosts();
+            updateSortButtonHighlight();
+            sortPopoverPopup.setOpened(false);
+            isSortPopoverOpen[0] = false;
+        });
+
+        sortTopButton.addClickListener(e -> {
+            sortMode = 1;
+            loadPosts();
+            updateSortButtonHighlight();
+            sortPopoverPopup.setOpened(false);
+            isSortPopoverOpen[0] = false;
+        });
+        updateSortButtonHighlight();
+
 
 // Create the horizontal layout wrapper and center the button
-        HorizontalLayout middleBar = new HorizontalLayout(middleButton);
-        middleBar.setWidth("800px"); // Fixed width
+        middleBar = new HorizontalLayout(sortButtonWrapper);        middleBar.setWidth("800px"); // Fixed width
         middleBar.setHeight("20px");
         middleBar.getElement().getStyle().set("margin-left", "auto");  // Center the card horizontally.
         middleBar.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
@@ -246,7 +342,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         middleBar.setJustifyContentMode(FlexComponent.JustifyContentMode.START); // Center the button
         middleBar.setPadding(false);
         middleBar.getStyle()
-                .set("background-color", "#2a1a1b"); // Optional: match card background
+                .set("background-color", "#1a1a1b"); // Optional: match card background
 
         // Virtual List of posts
         postList = new VirtualList<>();
@@ -386,6 +482,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         Button newButton = new Button("New", e -> {
             sortMode = 0;
             loadPosts();
+            updateSortButtonHighlight();
         });
         newButton.getStyle()
                 .set("color", "white")
@@ -396,6 +493,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         Button topButton = new Button("Top", e -> {
             sortMode = 1;
             loadPosts();
+            updateSortButtonHighlight();
         });
         topButton.getStyle()
                 .set("color", "white")
@@ -729,20 +827,35 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
     private void loadPosts() {
         if (sortMode == 0) {
             allPosts = UserPost.readPostsFromFiles();
+            sortButton.setText("New");  // Update button label
         } else {
             allPosts = UserPost.readPostsSortedByLikes();
+            sortButton.setText("Top");
         }
 
-        // Rebuild the list with the input card at the top
         Component inputCard = createPostInputCard();
         styleInputCard(inputCard);
 
         List<Object> items = new ArrayList<>();
+        items.add(middleBar);
         items.add(inputCard);
         items.addAll(allPosts);
+
         postList.setItems(items);
     }
 
+    private void updateSortButtonHighlight() {
+        // Remove existing highlight
+        sortNewButton.removeClassName("popup-hover-item-active");
+        sortTopButton.removeClassName("popup-hover-item-active");
+
+        // Apply highlight depending on sortMode
+        if (sortMode == 0) {
+            sortNewButton.addClassName("popup-hover-item-active");
+        } else {
+            sortTopButton.addClassName("popup-hover-item-active");
+        }
+    }
 
 
 }

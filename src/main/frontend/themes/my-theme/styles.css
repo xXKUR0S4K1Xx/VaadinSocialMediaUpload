@@ -86,9 +86,32 @@ vaadin-text-area::part(textarea) {
 
 /* Hover effect: slightly brighten */
 .hover-card:hover {
-    filter: brightness(1.4); /* Makes it brighter on hover */
+    filter: brightness(1.2); /* Makes it brighter on hover */
     cursor: pointer; /* Optional: shows pointer cursor on hover */
 }
+.elliptical-glow-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Adjust horizontal padding to reduce width ~50% */
+    padding: 0px 0px;  /* keep vertical padding, halve horizontal padding */
+
+    border-radius: 200px;
+    transition: box-shadow 0.2s ease, background-color 0.3s ease;
+    cursor: pointer;
+    box-sizing: content-box;
+
+    background-color: transparent; /* default transparent */
+}
+
+.elliptical-glow-wrapper:hover {
+    background-color: rgba(104, 107, 110, 0.25); /* translucent fill for inner glow */
+    box-shadow: 0 0 8px 3px rgba(104, 107, 110, 0.7);
+}
+
+
+
 .centered-button {
   width: 200px;
   display: flex;
@@ -107,4 +130,29 @@ vaadin-text-area::part(textarea) {
     box-shadow: none !important;
     padding: 0 !important;
     margin: 0 !important;
+}
+
+.popup-hover-item-active {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+.popup-hover-item {
+    background-color: transparent;
+    width: 100%;
+    text-align: left;
+    padding: 6px 12px;
+    border: none;
+    color: #D7DADC;
+    font: inherit;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+}
+
+/* Hover effect for non-active buttons */
+.popup-hover-item:hover:not(.popup-hover-item-active) {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Active button highlight, always visible */
+.popup-hover-item-active {
+    background-color: rgba(255, 255, 255, 0.16) !important;
 }
