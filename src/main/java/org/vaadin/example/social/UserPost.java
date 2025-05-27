@@ -202,6 +202,57 @@ public class UserPost {
         return posts;
     }
 
+    public static List<Post> readPostsForUserSortedByLikes(String username) {
+        List<Post> posts = new ArrayList<>();
+        Path userPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Posts");
+
+        if (!Files.exists(userPostsDir)) {
+            return posts; // Return empty if folder doesn't exist
+        }
+
+        try {
+            Files.list(userPostsDir)
+                    .filter(Files::isRegularFile)
+                    .forEach(file -> {
+                        try {
+                            List<String> lines = Files.readAllLines(file);
+                            for (String line : lines) {
+                                String[] parts = line.split("#", -1);
+                                if (parts.length > 8) {
+                                    parts = Arrays.copyOf(parts, 8);
+                                    line = String.join("#", parts);
+                                }
+
+                                if (parts.length == 8) {
+                                    String decodedContent = Post.decodeContent(parts[4]);
+                                    Post post = new Post(
+                                            parts[0], // postId
+                                            parts[1], // parentId
+                                            Integer.parseInt(parts[2]), // likes
+                                            parts[3], // parentUser
+                                            decodedContent, // decoded content
+                                            parts[5], // timestamp
+                                            parts[6], // username
+                                            parts[7]  // likedUsers
+                                    );
+                                    posts.add(post);
+                                }
+                            }
+                        } catch (IOException e) {
+                            System.err.println("Error reading file: " + file);
+                            e.printStackTrace();
+                        }
+                    });
+        } catch (IOException e) {
+            System.err.println("Error listing files for user: " + username);
+            e.printStackTrace();
+        }
+
+        // ✅ Sort by likes descending
+        posts.sort((p1, p2) -> Integer.compare(p2.getLikes(), p1.getLikes()));
+
+        return posts;
+    }
 
 
 
@@ -209,6 +260,7 @@ public class UserPost {
     public static void savePost(Post updatedPost) {
         List<Post> posts = readPostsFromFiles();
 
+        // Update the post in the list
         for (int i = 0; i < posts.size(); i++) {
             if (posts.get(i).getPostId().equals(updatedPost.getPostId())) {
                 posts.set(i, updatedPost); // Replace the old one
@@ -216,7 +268,7 @@ public class UserPost {
             }
         }
 
-        // Save all posts back to files
+        // Save all posts back to the main post directory
         for (Post post : posts) {
             try {
                 Files.write(Paths.get(postsDirectory, post.getPostId()), post.toString().getBytes());
@@ -224,6 +276,9 @@ public class UserPost {
                 e.printStackTrace();
             }
         }
+
+        // ✅ Also update the post in the user's personal directory
+        savePostToUserDirectory(updatedPost, true);
     }
 
     // Create the UI component for replying to a post
@@ -343,7 +398,7 @@ public class UserPost {
             Files.write(Paths.get(postsDirectory, newPost.getPostId()), newPost.toString().getBytes());
 
             // Save to user-specific folder
-            savePostToUserDirectory(newPost);
+            savePostToUserDirectory(newPost, false); // false because it's a new post, not an overwrite
 
             // Only update post count if it's a top-level post
             if (!isReply) {
@@ -412,7 +467,7 @@ public class UserPost {
     }
 
     //Erstellt einen ganz neuen Post (kein Reply) und speichert ihn.
-    public static void createAndSaveNewPost(String postContent) {
+    public static Post createAndSaveNewPost(String postContent) {
         // Get all posts and find the maximum existing post ID
         File folder = new File(postsDirectory);
         File[] files = folder.listFiles((dir, name) -> !name.contains("."));
@@ -429,54 +484,66 @@ public class UserPost {
             e.printStackTrace();
         }
 
-        // Get current time in seconds (flat, no milliseconds)
+        // Get current time in seconds
         long currentTimeInSeconds = System.currentTimeMillis() / 1000;
-
-        // Convert the timestamp to the desired format before saving
         String formattedTimestamp = Post.formatTimestamp(String.valueOf(currentTimeInSeconds));
 
         // Create the new post
         Post newPost = new Post(
-                String.valueOf(nextId),             // 1. postId
-                "0",                                // 2. parentId (not a reply)
-                0,                                  // 3. likes (default value)
-                "",                                 // 4. parentUser (not used unless it's a reply)
-                postContent,                        // 5. post content
-                formattedTimestamp,                 // 6. timestamp
-                currentUser,                        // 7. username of the author
-                ""                                  // 8. likedUsers (empty string for new post)
+                String.valueOf(nextId),    // 1. postId
+                "0",                       // 2. parentId
+                0,                         // 3. likes
+                "",                        // 4. parentUser
+                postContent,              // 5. post content
+                formattedTimestamp,       // 6. timestamp
+                currentUser,              // 7. username
+                ""                        // 8. likedUsers
         );
 
+        // Save to main directory and update user stats
+        saveNewPost(newPost, false);
 
-
-        // Save the new post to file with the unique ID
-        saveNewPost(newPost, false);  // False means this is not a reply, so the post count should be updated for the user
+        // Return the created Post for further usage
+        return newPost;
     }
 
-    private static void savePostToUserDirectory(Post post) {
+    public static void savePostToUserDirectory(Post post, boolean overwrite) {
         String username = post.getUserName();
-        if (username == null || username.isEmpty()) {
-            return; // safety check
-        }
+        if (username == null || username.isEmpty()) return;
 
         Path userPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Posts");
 
         try {
-            Files.createDirectories(userPostsDir); // create folder if not exists
+            Files.createDirectories(userPostsDir);
 
-            // Get the next available post number (based on number of existing files)
-            long postNumber = Files.list(userPostsDir)
-                    .filter(p -> !Files.isDirectory(p))
-                    .count() + 1;
+            // Check if a file already contains this postId
+            Path existingFile = Files.list(userPostsDir)
+                    .filter(p -> {
+                        try {
+                            return Files.readString(p).startsWith(post.getPostId() + "#");
+                        } catch (IOException e) {
+                            return false;
+                        }
+                    })
+                    .findFirst()
+                    .orElse(null);
 
-            Path userPostFile = userPostsDir.resolve(String.valueOf(postNumber));
-            Files.write(userPostFile, post.toString().getBytes());
+            if (existingFile != null && overwrite) {
+                // Overwrite the matching file
+                Files.write(existingFile, post.toString().getBytes());
+            } else if (existingFile == null) {
+                // Create a new post file if it doesn't already exist
+                long postNumber = Files.list(userPostsDir)
+                        .filter(p -> !Files.isDirectory(p))
+                        .count() + 1;
+
+                Path newPostFile = userPostsDir.resolve(String.valueOf(postNumber));
+                Files.write(newPostFile, post.toString().getBytes());
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("Failed to write user-specific post file for user: " + username);
         }
     }
-
 
 }

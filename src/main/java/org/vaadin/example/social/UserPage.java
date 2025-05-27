@@ -19,21 +19,27 @@ import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
 @Route("userpage")  // Defines the route for this view. When navigating to '/media', this view is displayed.
-public class UserPage extends VerticalLayout {  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
+public class UserPage extends VerticalLayout {
 
+    private static final Logger log = LoggerFactory.getLogger(UserPage.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
+
+    private Button sortNewButton;
+    private Button sortTopButton;
+    private HorizontalLayout middleBar;
     private int sortMode = 0; // 0 = new, 1 = top
     private VirtualList<Object> postList;
     private List<Post> allPosts;
+    private Button sortButton;
+    String username = getLoggedInUsername();
 
     public UserPage() {  // Constructor that initializes the Media view.
         setSizeFull();  // Set the layout to take up the entire available space.
@@ -42,17 +48,67 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
         setMargin(false);
         setPadding(false);
         getStyle().set("background-color", "#1a1a1b");  // Baby blue background
+        String username = getLoggedInUsername();
 
 
 
         VerticalLayout popoverContent = new VerticalLayout();
+        popoverContent.getStyle().set("background-color", "#282b30")  // Apply the color you need
+                .set("border-radius", "16px")  // Adjust the value as needed to round the corners
+                .set("overflow", "hidden"); // This clips the content to the rounded corners
+
+        Avatar userAvatar2 = new Avatar(username);
+        userAvatar2.getStyle()
+                .set("background-color", "white")
+                .set("color", "black")
+                .set("border", "1px solid black");
+
+// Wrap avatar in RouterLink
+        RouterLink avatarLink = new RouterLink();
+        avatarLink.setRoute(UserPage.class); // replace with actual class
+        avatarLink.add(userAvatar2);
+
+// Optional: remove link styling
+        avatarLink.getStyle().set("text-decoration", "none");
+        RouterLink userpageLink = new RouterLink();
+        userpageLink.setText("View Profile");
+        userpageLink.setRoute(UserPage.class); // Replace with your actual target view class
+        userpageLink.getStyle()
+                .set("font-weight", "bold")
+                .set("font-size", "14px")
+                .set("color", "white")
+                .set("text-decoration", "none"); // optional: remove underline
+
+
+        Div usernameDiv = new Div();
+        usernameDiv.setText(username); // Use the logged-in username
+        usernameDiv.getStyle()
+                .set("font-size", "13px")
+                .set("color", "#7e8f96");
+
+        VerticalLayout userInfoLayout = new VerticalLayout(userpageLink, usernameDiv);
+        userInfoLayout.setPadding(false);
+        userInfoLayout.setSpacing(false);
+        userInfoLayout.setMargin(false);
+
+        HorizontalLayout userRow = new HorizontalLayout(userInfoLayout);
+        userRow.setAlignItems(FlexComponent.Alignment.CENTER);  // Center vertically
+        userRow.setSpacing(true);  // Add some space between Avatar and the user info
+
+// === Add the Second Avatar to a Different Layout or Row ===
+        HorizontalLayout secondAvatarLayout = new HorizontalLayout(avatarLink, userInfoLayout);
+        secondAvatarLayout.setAlignItems(FlexComponent.Alignment.CENTER);  // Center the second avatar
+        secondAvatarLayout.setSpacing(true);
+
+
         Button logoutButton = new Button("Logout", event -> {
             // Implement logout logic here
             getUI().ifPresent(ui -> ui.navigate("login"));
         });
-        popoverContent.add(logoutButton);
+        logoutButton.getStyle().set("color", "white");  // Set text color to white
 
-        String username = getLoggedInUsername();
+        popoverContent.add(secondAvatarLayout, logoutButton);
+
         Avatar userAvatar = new Avatar(username);
         userAvatar.getStyle()
                 .set("background-color", "white")  //White background
@@ -129,15 +185,13 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
 
 
         // Fancy "Communo" title
-        // Replace the Span with a RouterLink
-        RouterLink title = new RouterLink("Semaino", Media.class);
+        Span title = new Span("Semaino");
         title.getStyle()
                 .setWidth("179px")
                 .set("font-family", "'Segoe Script', cursive")
                 .set("font-size", "28px")
                 .set("font-weight", "bold")
-                .set("color", "#FFFFFF")
-                .set("text-decoration", "none"); // Optional: remove underline
+                .set("color", "#FFFFFF");  // Set headline color to white
 
         // Create root layout
         HorizontalLayout rootLayout = new HorizontalLayout();
@@ -184,6 +238,118 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
         inputCard.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
         inputCard.getElement().getStyle().set("margin-top", "15px");
 
+        // === Sort Button (Trigger) ===
+        sortButton = new Button("New");
+        sortButton.addClassName("glow-hover");
+        sortButton.getStyle()
+                .set("margin", "0")
+                .set("padding", "0")
+                .set("height", "20px")
+                .set("color", "#686b6e") // Set text color
+                .set("font-size", "13px");       // Make text smaller (half of typical 20px)
+
+        Div sortButtonWrapper = new Div();
+        sortButtonWrapper.addClassName("elliptical-glow-wrapper");
+
+// Add the sortButton inside the wrapper
+        sortButtonWrapper.add(sortButton);
+// === Popover Setup ===
+        Popover sortPopoverPopup = new Popover();
+        sortPopoverPopup.addClassName("glow-hover");
+        sortPopoverPopup.setTarget(sortButton); // This is the trigger
+        sortPopoverPopup.setPosition(PopoverPosition.BOTTOM);
+        sortPopoverPopup.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
+
+// === Popover Content ===
+        VerticalLayout sortPopoverContent = new VerticalLayout();
+        sortPopoverContent.setWidthFull(); // Ensure popup content fills available width
+        sortPopoverContent.setPadding(false);
+        sortPopoverContent.setSpacing(false);
+        sortPopoverContent.getStyle()
+                .set("background-color", "#282b30")
+                .set("color", "#ffffff")
+                .set("min-width", "120px")
+                .set("text-align", "left")
+                .set("border-radius", "8px");  // 👈 Rounded corners
+
+
+        Div sortHeader = new Div();
+        sortHeader.setText("Sort by:");
+        sortHeader.getStyle()
+                .set("font-weight", "bold")
+                .set("color", "#686b6e")
+                .set("text-align", "center")
+                .set("width", "100%"); // Ensure it spans enough space to allow centering
+
+// === Sort Options ===
+        sortNewButton = new Button("New");
+        sortNewButton.setWidthFull(); // Ensures the button spans full width
+        sortNewButton.addClassName("popup-hover-item");
+        sortNewButton.getStyle().set("width", "100%")
+                .set("color", "#D7DADC");
+
+
+        sortTopButton = new Button("Top");
+        sortTopButton.setWidthFull();
+        sortTopButton.addClassName("popup-hover-item");
+        sortTopButton.getStyle().set("width", "100%")
+                .set("color", "#D7DADC");
+
+// === Assemble Popover ===
+        sortPopoverContent.add(sortHeader, sortNewButton, sortTopButton);
+        sortPopoverPopup.add(sortPopoverContent);
+
+// === Track Popover Open State ===
+        boolean[] isSortPopoverOpen = {false};
+
+// === Toggle with Delay to Prevent Vaadin Sync Issues ===
+        sortButton.getElement().addEventListener("click", e -> {
+            if (!isSortPopoverOpen[0]) {
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        getUI().ifPresent(ui -> ui.access(() -> {
+                            sortPopoverPopup.setOpened(true);
+                            isSortPopoverOpen[0] = true;
+                        }));
+                    }
+                }, 100); // 100ms delay
+            } else {
+                sortPopoverPopup.setOpened(false);
+                isSortPopoverOpen[0] = false;
+            }
+        });
+
+// === Button Logic ===
+        sortNewButton.addClickListener(e -> {
+            sortMode = 0;
+            loadPosts();
+            updateSortButtonHighlight();
+            sortPopoverPopup.setOpened(false);
+            isSortPopoverOpen[0] = false;
+        });
+
+        sortTopButton.addClickListener(e -> {
+            sortMode = 1;
+            loadPosts();
+            updateSortButtonHighlight();
+            sortPopoverPopup.setOpened(false);
+            isSortPopoverOpen[0] = false;
+        });
+        updateSortButtonHighlight();
+
+
+// Create the horizontal layout wrapper and center the button
+        middleBar = new HorizontalLayout(sortButtonWrapper);        middleBar.setWidth("800px"); // Fixed width
+        middleBar.setHeight("20px");
+        middleBar.getElement().getStyle().set("margin-left", "auto");  // Center the card horizontally.
+        middleBar.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
+        middleBar.getElement().getStyle().set("margin-top", "10px");  // Center the card horizontally.
+        middleBar.setJustifyContentMode(FlexComponent.JustifyContentMode.START); // Center the button
+        middleBar.setPadding(false);
+        middleBar.getStyle()
+                .set("background-color", "#1a1a1b"); // Optional: match card background
+
         // Virtual List of posts
         postList = new VirtualList<>();
         postList.getElement().getStyle().set("scrollbar-gutter", "stable both-edges");  // Ensures the scrollbar appears on both edges.
@@ -192,6 +358,7 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
                 .set("margin", "0");
         // Create list: first the post input card, then the posts
         List<Object> items = new ArrayList<>();  // Create a list to store the input card and posts.
+        items.add(middleBar); // Middle bar with button
         items.add(inputCard);  // Add the input card to the list.
         items.addAll(UserPost.readPostsForUser(username));
 
@@ -286,89 +453,6 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
                 .set("border-top", "1px solid #666")
                 .set("background-color", "#1a1a1b");
 
-// Create a "Search" div to act like a button
-        Div searchDiv = new Div();
-        searchDiv.setText("Search");
-        searchDiv.getStyle()
-                .set("cursor", "pointer")
-                .set("text-align", "center")
-                .set("padding", "8px")
-                .set("border", "1px solid #888")
-                .set("border-radius", "4px")
-                .set("background-color", "#2a2a2a")
-                .set("color", "#ffffff")
-                // .set("width", "fit-content")
-                .setWidth("75px"); // Makes it take full width of its container
-
-
-
-        Popover searchPopover = new Popover();
-        searchPopover.setTarget(searchDiv);
-        searchPopover.setPosition(PopoverPosition.BOTTOM);
-        searchPopover.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
-
-// Create the content once
-        VerticalLayout popoverContent2 = new VerticalLayout();
-
-        popoverContent2.setPadding(true);
-        popoverContent2.setSpacing(true);
-        popoverContent2.getStyle()
-                .set("background-color", "#282b30")
-                .set("text-align", "center")
-                .set("color", "#ffffff");
-
-
-        Button newButton = new Button("New", e -> {
-            sortMode = 0;
-            loadPosts();
-        });
-        newButton.getStyle()
-                .set("color", "white")
-                .set("text-align", "center") // Center the text inside the button
-                .set("width", "100%") // Make sure the button takes full width of its container
-                .set("padding", "0px"); // Remove unnecessary padding that could affect centering
-
-        Button topButton = new Button("Top", e -> {
-            sortMode = 1;
-            loadPosts();
-        });
-        topButton.getStyle()
-                .set("color", "white")
-                .set("text-align", "center") // Center the text inside the button
-                .set("width", "100%") // Make sure the button takes full width of its container
-                .set("padding", "0px"); // Remove unnecessary padding that could affect centering
-        topButton.addClassName("centered-button");
-
-
-        topButton.setWidthFull();
-
-
-        popoverContent2.add(newButton, topButton);
-        searchPopover.add(popoverContent2);
-
-// Track open state
-        boolean[] isPopoverOpen = {false};
-
-// Toggle logic on click
-        searchDiv.getElement().addEventListener("click", e -> {
-            if (!isPopoverOpen[0]) {
-                // Add a delay before showing
-                new Timer().schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        getUI().ifPresent(ui -> ui.access(() -> {
-                            searchPopover.setOpened(true);
-                            isPopoverOpen[0] = true;
-                        }));
-                    }
-                }, 100); // 100 ms delay
-            } else {
-                searchPopover.setOpened(false);
-                isPopoverOpen[0] = false;
-            }
-        });
-
-        filler.add(searchDiv);
 // ===== Content =====
         layout.add(content); // Only content is part of layout flow
 
@@ -625,13 +709,13 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
 
         // Third Row: Text Field
         TextArea postArea = new TextArea();
+        postArea.addClassName("media-textfield");
+        postArea.getElement().getStyle()
+                .set("background-color", "#6c7a89")
+                .set("color", "#A0B3B6");  // Optional: set text color to black for contrast
         postArea.setWidthFull();
         postArea.setPlaceholder("What's on your mind?");
         postArea.setHeight("120px");
-        postArea.getStyle()
-                .set("background-color", "#2a2a2b")  // Dark input background
-                .set("color", "#ffffff")  // White text
-                .set("border", "1px solid #555");
 
         // Fourth Row: Post Button
         Button postButton = new Button("Post", e -> {
@@ -663,27 +747,36 @@ public class UserPage extends VerticalLayout {  // Main layout of the Media view
     }
     private void loadPosts() {
         if (sortMode == 0) {
-            allPosts = UserPost.readPostsFromFiles();
+            allPosts = UserPost.readPostsForUser(username);
+            sortButton.setText("New");  // Update button label
         } else {
-            allPosts = UserPost.readPostsSortedByLikes();
+            allPosts = UserPost.readPostsForUserSortedByLikes(username);
+            sortButton.setText("Top");
         }
 
-        // Rebuild the list with the input card at the top
         Component inputCard = createPostInputCard();
         styleInputCard(inputCard);
 
         List<Object> items = new ArrayList<>();
-        String username = "Guest"; // default fallback
-        try {
-            username = Files.readString(Paths.get("loggedinuser.txt")).trim();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        items.add(middleBar);
         items.add(inputCard);
-        items.addAll(UserPost.readPostsForUser(username));
+        items.addAll(allPosts);
+
         postList.setItems(items);
     }
 
+    private void updateSortButtonHighlight() {
+        // Remove existing highlight
+        sortNewButton.removeClassName("popup-hover-item-active");
+        sortTopButton.removeClassName("popup-hover-item-active");
+
+        // Apply highlight depending on sortMode
+        if (sortMode == 0) {
+            sortNewButton.addClassName("popup-hover-item-active");
+        } else {
+            sortTopButton.addClassName("popup-hover-item-active");
+        }
+    }
 
 
 }

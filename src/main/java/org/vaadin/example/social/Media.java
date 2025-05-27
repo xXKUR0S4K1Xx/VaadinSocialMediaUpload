@@ -19,6 +19,8 @@ import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +28,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 @Route("media")  // Defines the route for this view. When navigating to '/media', this view is displayed.
-public class Media extends VerticalLayout {  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
+public class Media extends VerticalLayout {
+    private static final Logger log = LoggerFactory.getLogger(Media.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
 
     private Button sortNewButton;
     private Button sortTopButton;
@@ -269,11 +272,13 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                 .set("border-radius", "8px");  // 👈 Rounded corners
 
 
-// === Header using Div instead of Label ===
         Div sortHeader = new Div();
         sortHeader.setText("Sort by:");
-        sortHeader.getStyle().set("font-weight", "bold")
-                             .set("color", "#686b6e");
+        sortHeader.getStyle()
+                .set("font-weight", "bold")
+                .set("color", "#686b6e")
+                .set("text-align", "center")
+                .set("width", "100%"); // Ensure it spans enough space to allow centering
 
 // === Sort Options ===
         sortNewButton = new Button("New");
@@ -350,6 +355,7 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         postList.getElement().getStyle()
                 .set("padding", "0")
                 .set("margin", "0");
+
         // Create list: first the post input card, then the posts
         List<Object> items = new ArrayList<>();  // Create a list to store the input card and posts.
         items.add(middleBar); // Middle bar with button
@@ -447,91 +453,6 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
                 .set("border-top", "1px solid #666")
                 .set("background-color", "#1a1a1b");
 
-// Create a "Search" div to act like a button
-        Div searchDiv = new Div();
-        searchDiv.setText("sort");
-        searchDiv.getStyle()
-                .set("cursor", "pointer")
-                .set("text-align", "center")
-                .set("padding", "8px")
-                .set("border", "1px solid #888")
-                .set("border-radius", "4px")
-                .set("background-color", "#2a2a2a")
-                .set("color", "#ffffff")
-               // .set("width", "fit-content")
-                .setWidth("75px"); // Makes it take full width of its container
-
-
-
-        Popover searchPopover = new Popover();
-        searchPopover.setTarget(searchDiv);
-        searchPopover.setPosition(PopoverPosition.BOTTOM);
-        searchPopover.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
-
-// Create the content once
-        VerticalLayout popoverContent2 = new VerticalLayout();
-
-        popoverContent2.setPadding(true);
-        popoverContent2.setSpacing(true);
-        popoverContent2.getStyle()
-                .set("background-color", "#282b30")
-                .set("text-align", "center")
-                .set("color", "#ffffff");
-
-
-        Button newButton = new Button("New", e -> {
-            sortMode = 0;
-            loadPosts();
-            updateSortButtonHighlight();
-        });
-        newButton.getStyle()
-                .set("color", "white")
-                .set("text-align", "center") // Center the text inside the button
-                .set("width", "100%") // Make sure the button takes full width of its container
-                .set("padding", "0px"); // Remove unnecessary padding that could affect centering
-
-        Button topButton = new Button("Top", e -> {
-            sortMode = 1;
-            loadPosts();
-            updateSortButtonHighlight();
-        });
-        topButton.getStyle()
-                .set("color", "white")
-                .set("text-align", "center") // Center the text inside the button
-                .set("width", "100%") // Make sure the button takes full width of its container
-                .set("padding", "0px"); // Remove unnecessary padding that could affect centering
-        topButton.addClassName("centered-button");
-
-
-        topButton.setWidthFull();
-
-
-        popoverContent2.add(newButton, topButton);
-        searchPopover.add(popoverContent2);
-
-// Track open state
-        boolean[] isPopoverOpen = {false};
-
-// Toggle logic on click
-        searchDiv.getElement().addEventListener("click", e -> {
-            if (!isPopoverOpen[0]) {
-                // Add a delay before showing
-                new Timer().schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        getUI().ifPresent(ui -> ui.access(() -> {
-                            searchPopover.setOpened(true);
-                            isPopoverOpen[0] = true;
-                        }));
-                    }
-                }, 100); // 100 ms delay
-            } else {
-                searchPopover.setOpened(false);
-                isPopoverOpen[0] = false;
-            }
-        });
-
-        filler.add(searchDiv);
 // ===== Content =====
         layout.add(content); // Only content is part of layout flow
 
@@ -799,9 +720,10 @@ public class Media extends VerticalLayout {  // Main layout of the Media view. I
         // Fourth Row: Post Button
         Button postButton = new Button("Post", e -> {
             if (!postArea.isEmpty()) {
-                UserPost.createAndSaveNewPost(postArea.getValue());
+                Post createdPost = UserPost.createAndSaveNewPost(postArea.getValue());
+                UserPost.savePostToUserDirectory(createdPost, false);
                 postArea.clear();
-                getUI().ifPresent(ui -> ui.getPage().reload()); // simple reload to refresh posts
+                getUI().ifPresent(ui -> ui.getPage().reload());
             }
         });
 
