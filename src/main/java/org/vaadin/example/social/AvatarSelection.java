@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-@Route("media")  // Defines the route for this view. When navigating to '/media', this view is displayed.
-public class Media extends VerticalLayout {
+@Route("avatarselection")  // Defines the route for this view. When navigating to '/media', this view is displayed.
+public class AvatarSelection extends VerticalLayout {
     private static final Logger log = LoggerFactory.getLogger(Media.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
 
     private Button sortNewButton;
@@ -39,8 +39,7 @@ public class Media extends VerticalLayout {
     private List<Post> allPosts;
     private Button sortButton;
 
-
-    public Media() {  // Constructor that initializes the Media view.
+    public AvatarSelection() {  // Constructor that initializes the Media view.
         setSizeFull();  // Set the layout to take up the entire available space.
         setAlignItems(Alignment.CENTER);  // Align child components (like cards) to the center horizontally.
         setSpacing(false);  // Disable spacing between the components.
@@ -53,8 +52,8 @@ public class Media extends VerticalLayout {
 
         VerticalLayout popoverContent = new VerticalLayout();
         popoverContent.getStyle().set("background-color", "#282b30")  // Apply the color you need
-                                 .set("border-radius", "16px")  // Adjust the value as needed to round the corners
-                                 .set("overflow", "hidden"); // This clips the content to the rounded corners
+                .set("border-radius", "16px")  // Adjust the value as needed to round the corners
+                .set("overflow", "hidden"); // This clips the content to the rounded corners
 
         Avatar userAvatar2 = new Avatar(username);
         userAvatar2.getStyle()
@@ -290,14 +289,14 @@ public class Media extends VerticalLayout {
         sortNewButton.setWidthFull(); // Ensures the button spans full width
         sortNewButton.addClassName("popup-hover-item");
         sortNewButton.getStyle().set("width", "100%")
-                                .set("color", "#D7DADC");
+                .set("color", "#D7DADC");
 
 
         sortTopButton = new Button("Top");
         sortTopButton.setWidthFull();
         sortTopButton.addClassName("popup-hover-item");
         sortTopButton.getStyle().set("width", "100%")
-                                .set("color", "#D7DADC");
+                .set("color", "#D7DADC");
 
 // === Assemble Popover ===
         sortPopoverContent.add(sortHeader, sortNewButton, sortTopButton);

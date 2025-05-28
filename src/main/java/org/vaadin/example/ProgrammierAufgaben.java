@@ -75,6 +75,7 @@ public class ProgrammierAufgaben extends VerticalLayout {
         wordInput.setPlaceholder("Type a word");
 
         TextField letterInput = new TextField("Enter letters");
+        letterInput.addClassName("placeholder-custom");
         letterInput.setPlaceholder("Type letters to search");
 
         Button findLettersButton = new Button("Find Letters", e -> {

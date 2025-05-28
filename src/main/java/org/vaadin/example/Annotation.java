@@ -4,6 +4,20 @@ public class Annotation {
 }
 /*
 
+
+
+ForUserPage copy and paste this:
+    postList = new VirtualList<>();
+        postList.getElement().getStyle().set("scrollbar-gutter", "stable both-edges");  // Ensures the scrollbar appears on both edges.
+        postList.getElement().getStyle()
+                .set("padding", "0")
+                .set("margin", "0");
+        // Create list: first the post input card, then the posts
+        List<Object> items = new ArrayList<>();  // Create a list to store the input card and posts.
+        items.add(middleBar); // Middle bar with button
+        items.add(inputCard);  // Add the input card to the list.
+        items.addAll(UserPost.readPostsForUser(username));
+
 Als nächsters:
 Switch the sort button into the new layout.
 Should display Sort

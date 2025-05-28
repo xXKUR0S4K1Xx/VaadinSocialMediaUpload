@@ -311,17 +311,24 @@ public class UserPost {
         inputRow.getStyle().set("margin-top", "10px");
 
         TextArea replyField = new TextArea();
-        replyField.setPlaceholder("Write your reply...");
         replyField.getElement().getStyle()
-                .set("background-color", "#6c7a89")
-                .set("color", "#A0B3B6");
+                .set("background-color", "#1a1a1b")
+                .set("color", "#d7dadc");
+
+        simulatePlaceholder(replyField, "Write your reply...");
+
         replyField.setWidthFull();
         replyField.setMaxLength(500);
         replyField.setHeight("80px");
 
         Button sendButton = new Button("Send");
-        sendButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
+        sendButton.getStyle()
+                .set("background-color", "#E0E0E0")  // light grayish-white
+                .set("color", "#333333")             // dark text for contrast
+                .set("border", "none")
+                .set("border-radius", "4px")
+                .set("font-weight", "bold")
+                .set("box-shadow", "none");          // keep it flat (dull look)
         inputRow.add(replyField, sendButton);
 
         replyButton.addClickListener(e -> inputRow.setVisible(!inputRow.isVisible()));
@@ -546,4 +553,69 @@ public class UserPost {
         }
     }
 
+    private void simulatePlaceholder(TextArea area, String placeholderText) {
+        // Track whether we’re showing the fake placeholder
+        final boolean[] showingPlaceholder = {true};
+
+        area.setValue(placeholderText);
+        area.getStyle()
+                .set("color", "#6c7a89")
+                .set("font-style", "normal")
+                .set("font-size", "0.875rem")
+                .set("line-height", "1.2");
+
+        area.addFocusListener(e -> {
+            if (showingPlaceholder[0]) {
+                // Clear placeholder text and prepare for typing
+                area.clear();
+                showingPlaceholder[0] = false;
+                area.getStyle()
+                        .set("color", "#d7dadc") // normal input color
+                        .set("font-style", "normal")
+                        .set("font-size", "1rem")
+                        .set("line-height", "normal");
+            }
+        });
+
+        area.addValueChangeListener(event -> {
+            String value = event.getValue();
+
+            if (!showingPlaceholder[0] && value.trim().isEmpty()) {
+                // User deleted all text manually → show placeholder again
+                area.setValue(placeholderText);
+                showingPlaceholder[0] = true;
+                area.getStyle()
+                        .set("color", "#6c7a89")
+                        .set("font-style", "normal")
+                        .set("font-size", "0.875rem")
+                        .set("line-height", "1.2");
+            } else if (showingPlaceholder[0] && !value.equals(placeholderText)) {
+                // User started typing while placeholder was still visible
+                showingPlaceholder[0] = false;
+                area.getStyle()
+                        .set("color", "#d7dadc")
+                        .set("font-style", "normal")
+                        .set("font-size", "1rem")
+                        .set("line-height", "normal");
+            }
+        });
+
+        area.addBlurListener(e -> {
+            if (area.getValue().trim().isEmpty()) {
+                area.setValue(placeholderText);
+                showingPlaceholder[0] = true;
+                area.getStyle()
+                        .set("color", "#6c7a89")
+                        .set("font-style", "normal")
+                        .set("font-size", "0.875rem")
+                        .set("line-height", "1.2");
+            }
+        });
+    }
+
+
+    public void applySimulatedPlaceholder(TextArea area, String placeholderText, String inputColor) {
+        simulatePlaceholder(area, placeholderText);
+        // Optionally you can add more styling or logic here using inputColor
+    }
 }

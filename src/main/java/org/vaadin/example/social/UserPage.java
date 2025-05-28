@@ -29,8 +29,7 @@ import java.util.TimerTask;
 
 @Route("userpage")  // Defines the route for this view. When navigating to '/media', this view is displayed.
 public class UserPage extends VerticalLayout {
-
-    private static final Logger log = LoggerFactory.getLogger(UserPage.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
+    private static final Logger log = LoggerFactory.getLogger(Media.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
 
     private Button sortNewButton;
     private Button sortTopButton;
@@ -39,7 +38,7 @@ public class UserPage extends VerticalLayout {
     private VirtualList<Object> postList;
     private List<Post> allPosts;
     private Button sortButton;
-    String username = getLoggedInUsername();
+
 
     public UserPage() {  // Constructor that initializes the Media view.
         setSizeFull();  // Set the layout to take up the entire available space.
@@ -183,7 +182,8 @@ public class UserPage extends VerticalLayout {
                         .set("padding", "0 15px")            // Padding inside the input field
                 );
 
-        //click on the title to get back to main
+
+        // Fancy "Communo" title
         RouterLink clickableTitle = new RouterLink("Semaino", Media.class);
         clickableTitle.getStyle()
                 .set("font-family", "'Segoe Script', cursive")
@@ -193,6 +193,9 @@ public class UserPage extends VerticalLayout {
                 .set("text-decoration", "none")
                 .set("cursor", "pointer")
                 .setWidth("179px");
+
+
+// Add this `clickableTitle` to your layout instead of the Span directly
 
         // Create root layout
         HorizontalLayout rootLayout = new HorizontalLayout();
@@ -501,6 +504,7 @@ public class UserPage extends VerticalLayout {
         // Comment content (Textfield for the comment)
         Div commentContent = new Div();
         commentContent.setWidthFull(); // Make the row take full width
+
         commentContent.getStyle().set("text-align", "left");
         commentContent.getStyle()
                 .set("white-space", "pre-wrap")
@@ -623,6 +627,11 @@ public class UserPage extends VerticalLayout {
         // 🔁 Reply meta info
         HorizontalLayout replyMeta = new HorizontalLayout();
         Avatar replyAvatar = new Avatar(postData.getUserName());
+        replyAvatar.getStyle()
+                .set("background-color", "white")  // Avoid dark background affecting the avatar
+                .set("color", "black")  // Ensure the text/initials stay white
+                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
+
         Span replyUser = new Span(postData.getUserName());
         replyUser.getStyle().set("color", "#ffffff");  // White text
         Span replyTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
@@ -695,6 +704,12 @@ public class UserPage extends VerticalLayout {
         // Top: Avatar + Name
         HorizontalLayout topRow = new HorizontalLayout();
         Avatar avatar = new Avatar(currentUsername);
+        avatar.getStyle()
+                .set("background-color", "white")  // Avoid dark background affecting the avatar
+                .set("color", "black")  // Ensure the text/initials stay white
+                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
+
+
         Span name = new Span(currentUsername);
         name.getStyle().set("color", "#ffffff");  // White text
         name.getStyle().set("font-weight", "bold");
@@ -710,14 +725,21 @@ public class UserPage extends VerticalLayout {
 
         // Third Row: Text Field
         TextArea postArea = new TextArea();
-        postArea.addClassName("media-textfield");
+        UserPost userPost = new UserPost();
         postArea.getElement().getStyle()
-                .set("background-color", "#6c7a89")
-                .set("color", "#A0B3B6");  // Optional: set text color to black for contrast
-        postArea.setWidthFull();
-        postArea.setPlaceholder("What's on your mind?");
-        postArea.setHeight("120px");
+                .set("background-color", "#1a1a1b")
+                .set("color", "#A0B3B6")             // Soft text color
+                .set("caret-color", "#d3e3fd")       // Slightly bright caret
+                .set("border", "1px solid #6c7a89")  // Rounded border with specified color
+                .set("border-radius", "8px")         // Rounded corners (adjust as needed)
+                .set("padding", "8px");              // Optional: more breathing room
 
+//#d3e3fd
+        userPost.applySimulatedPlaceholder(postArea, "What's on your mind?", "#A0B3B6");
+
+        postArea.setWidthFull();
+        postArea.setHeight("120px");
+//#6c7a89
         // Fourth Row: Post Button
         Button postButton = new Button("Post", e -> {
             if (!postArea.isEmpty()) {
@@ -757,10 +779,10 @@ public class UserPage extends VerticalLayout {
     }
     private void loadPosts() {
         if (sortMode == 0) {
-            allPosts = UserPost.readPostsForUser(username);
+            allPosts = UserPost.readPostsFromFiles();
             sortButton.setText("New");  // Update button label
         } else {
-            allPosts = UserPost.readPostsForUserSortedByLikes(username);
+            allPosts = UserPost.readPostsSortedByLikes();
             sortButton.setText("Top");
         }
 
