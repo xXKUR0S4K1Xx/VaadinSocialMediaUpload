@@ -4,17 +4,20 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.popover.Popover;
 import com.vaadin.flow.component.popover.PopoverPosition;
 import com.vaadin.flow.component.popover.PopoverVariant;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.upload.Upload;
+import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
@@ -22,7 +25,9 @@ import com.vaadin.flow.router.RouterLink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.*;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -38,6 +43,7 @@ public class AvatarSelection extends VerticalLayout {
     private VirtualList<Object> postList;
     private List<Post> allPosts;
     private Button sortButton;
+
 
     public AvatarSelection() {  // Constructor that initializes the Media view.
         setSizeFull();  // Set the layout to take up the entire available space.
@@ -234,124 +240,6 @@ public class AvatarSelection extends VerticalLayout {
         rootLayout.add(leftLayout, centerLayout, rightLayout);
         rootLayout.setFlexGrow(1, leftLayout, centerLayout, rightLayout);
 
-        // Create the input card ONCE. This is the first element of the list.
-        Component inputCard = createPostInputCard();  // Create the input card for adding posts or replies.
-        inputCard.getElement().getStyle().set("width", "800px");  // Set the width of the input card to 800px.
-        inputCard.getElement().getStyle().set("margin-left", "auto");  // Center the card horizontally.
-        inputCard.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
-        inputCard.getElement().getStyle().set("margin-top", "15px");
-
-        // === Sort Button (Trigger) ===
-        sortButton = new Button("New");
-        sortButton.addClassName("glow-hover");
-        sortButton.getStyle()
-                .set("margin", "0")
-                .set("padding", "0")
-                .set("height", "20px")
-                .set("color", "#686b6e") // Set text color
-                .set("font-size", "13px");       // Make text smaller (half of typical 20px)
-
-        Div sortButtonWrapper = new Div();
-        sortButtonWrapper.addClassName("elliptical-glow-wrapper");
-
-// Add the sortButton inside the wrapper
-        sortButtonWrapper.add(sortButton);
-// === Popover Setup ===
-        Popover sortPopoverPopup = new Popover();
-        sortPopoverPopup.addClassName("glow-hover");
-        sortPopoverPopup.setTarget(sortButton); // This is the trigger
-        sortPopoverPopup.setPosition(PopoverPosition.BOTTOM);
-        sortPopoverPopup.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
-
-// === Popover Content ===
-        VerticalLayout sortPopoverContent = new VerticalLayout();
-        sortPopoverContent.setWidthFull(); // Ensure popup content fills available width
-        sortPopoverContent.setPadding(false);
-        sortPopoverContent.setSpacing(false);
-        sortPopoverContent.getStyle()
-                .set("background-color", "#282b30")
-                .set("color", "#ffffff")
-                .set("min-width", "120px")
-                .set("text-align", "left")
-                .set("border-radius", "8px");  // 👈 Rounded corners
-
-
-        Div sortHeader = new Div();
-        sortHeader.setText("Sort by:");
-        sortHeader.getStyle()
-                .set("font-weight", "bold")
-                .set("color", "#686b6e")
-                .set("text-align", "center")
-                .set("width", "100%"); // Ensure it spans enough space to allow centering
-
-// === Sort Options ===
-        sortNewButton = new Button("New");
-        sortNewButton.setWidthFull(); // Ensures the button spans full width
-        sortNewButton.addClassName("popup-hover-item");
-        sortNewButton.getStyle().set("width", "100%")
-                .set("color", "#D7DADC");
-
-
-        sortTopButton = new Button("Top");
-        sortTopButton.setWidthFull();
-        sortTopButton.addClassName("popup-hover-item");
-        sortTopButton.getStyle().set("width", "100%")
-                .set("color", "#D7DADC");
-
-// === Assemble Popover ===
-        sortPopoverContent.add(sortHeader, sortNewButton, sortTopButton);
-        sortPopoverPopup.add(sortPopoverContent);
-
-// === Track Popover Open State ===
-        boolean[] isSortPopoverOpen = {false};
-
-// === Toggle with Delay to Prevent Vaadin Sync Issues ===
-        sortButton.getElement().addEventListener("click", e -> {
-            if (!isSortPopoverOpen[0]) {
-                new Timer().schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        getUI().ifPresent(ui -> ui.access(() -> {
-                            sortPopoverPopup.setOpened(true);
-                            isSortPopoverOpen[0] = true;
-                        }));
-                    }
-                }, 100); // 100ms delay
-            } else {
-                sortPopoverPopup.setOpened(false);
-                isSortPopoverOpen[0] = false;
-            }
-        });
-
-// === Button Logic ===
-        sortNewButton.addClickListener(e -> {
-            sortMode = 0;
-            loadPosts();
-            updateSortButtonHighlight();
-            sortPopoverPopup.setOpened(false);
-            isSortPopoverOpen[0] = false;
-        });
-
-        sortTopButton.addClickListener(e -> {
-            sortMode = 1;
-            loadPosts();
-            updateSortButtonHighlight();
-            sortPopoverPopup.setOpened(false);
-            isSortPopoverOpen[0] = false;
-        });
-        updateSortButtonHighlight();
-
-
-// Create the horizontal layout wrapper and center the button
-        middleBar = new HorizontalLayout(sortButtonWrapper);        middleBar.setWidth("800px"); // Fixed width
-        middleBar.setHeight("20px");
-        middleBar.getElement().getStyle().set("margin-left", "auto");  // Center the card horizontally.
-        middleBar.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
-        middleBar.getElement().getStyle().set("margin-top", "10px");  // Center the card horizontally.
-        middleBar.setJustifyContentMode(FlexComponent.JustifyContentMode.START); // Center the button
-        middleBar.setPadding(false);
-        middleBar.getStyle()
-                .set("background-color", "#1a1a1b"); // Optional: match card background
 
         // Virtual List of posts
         postList = new VirtualList<>();
@@ -361,44 +249,21 @@ public class AvatarSelection extends VerticalLayout {
                 .set("margin", "0");
 
         // Create list: first the post input card, then the posts
-        List<Object> items = new ArrayList<>();  // Create a list to store the input card and posts.
-        items.add(middleBar); // Middle bar with button
-        items.add(inputCard);  // Add the input card to the list.
-        items.addAll(UserPost.readPostsFromFiles());  // Add posts read from files.
+        VirtualList<Component> postList = new VirtualList<>();
+        postList.setItems(List.of(createAvatarSelectionCard()));  // Only one item in the list
+        postList.setRenderer(new ComponentRenderer<>(component -> component));  // Single renderer
 
-        postList.setItems(items);  // Set the list of items (input card + posts) to the VirtualList.
-        postList.getElement().getStyle().set("overflow", "hidden");
+        postList.setWidthFull();   // Take full available width
+        postList.setHeight("800px");  // Fixed height or use setHeightFull() if you want full height
 
-
-        postList.setRenderer(new ComponentRenderer<>(item -> {  // Define how each item should be rendered in the list.
-            if (item instanceof Component) {
-                return (Component) item;  // If the item is the input card, return it as a component.
-            } else if (item instanceof Post post) {  // If the item is a post, render it as a post card.
-                Component card;
-                if (post.getParentId().equals("0")) {  // If the post is a top-level comment (not a reply).
-                    card = createCommentCard(post);  // Create a comment card.
-                } else {
-                    card = createReplyCard(post);  // Otherwise, create a reply card.
-                }
-                // Set styles for the card (no background color interference).
-                card.getElement().getStyle().set("margin", "0 auto");
-                card.getElement().getStyle().set("width", "800px");
-                card.getElement().getStyle().set("margin-top", "10px");
-                return card;
-            } else {
-                return new Span("Unknown item");  // Default message if item is unknown.
-            }
-        }));
-
-        postList.setWidthFull();  // Make the list take up full width.
-        postList.setHeightFull();  // Make the list take up full height.
+        postList.getElement().getStyle().set("overflow", "hidden");  // Hide scrollbars if desired
 
         // Wrapper layout for holding the content
         VerticalLayout content = new VerticalLayout();  // A container to hold the post list.
         content.setWidthFull();  // Make the container take up full width.
         content.setHeight("100%");  // Make the container take up the remaining height (95%).
         content.setPadding(false);  // Remove padding from the container.
-        content.setSpacing(true);  // Add spacing between components inside the container.
+        content.setSpacing(false);  // Add spacing between components inside the container.
         content.setDefaultHorizontalComponentAlignment(Alignment.CENTER);  // Center-align the components horizontally.
 
 
@@ -455,6 +320,7 @@ public class AvatarSelection extends VerticalLayout {
                 .set("bottom", "0")
                 .set("right", "0")
                 .set("border-top", "1px solid #666")
+                .set("border-left", "1px solid #666")
                 .set("background-color", "#1a1a1b");
 
 // ===== Content =====
@@ -465,308 +331,86 @@ public class AvatarSelection extends VerticalLayout {
 
     }
 
-    // Define the Comment Card
-    public VerticalLayout createCommentCard(Post postData) {
-        // Create the container for the card layout
-        VerticalLayout commentCardLayout = new VerticalLayout();
-        commentCardLayout.addClassName("hover-card");
-
-        commentCardLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-        commentCardLayout.setSpacing(true);
-        commentCardLayout.setPadding(true);
-        commentCardLayout.getStyle()
-                .set("border", "1px solid #ccc")
-                .set("border-radius", "10px")  // ✅ add smooth edges
-                .set("padding", "10px")
-                .set("margin", "0")
-                .set("background-color", "#1a1a1b")  // Dark background
-                .set("color", "#ffffff");  // White text
-
-        commentCardLayout.setWidth("800px");
-
-        // Top: Avatar + User Name + Posted on: Date
-        HorizontalLayout topRow = new HorizontalLayout();
-        Avatar userAvatar = new Avatar(postData.getUserName());
-        userAvatar.getStyle()
-                .set("background-color", "white")  // Avoid dark background affecting the avatar
-                .set("color", "black")  // Ensure the text/initials stay white
-                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
-
-        Span userName = new Span(postData.getUserName());
-        userName.getStyle().set("color", "#ffffff");  // White text
-        Span commentTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
-        commentTime.getStyle().set("color", "#ffffff");  // White text
-        topRow.add(userAvatar, userName, commentTime);
-        topRow.setWidthFull(); // Make the row take full width
-        topRow.setJustifyContentMode(JustifyContentMode.START); // Align content to start (left)
-        topRow.setAlignItems(Alignment.CENTER); // Vertically center inside the row
-
-        // Comment content (Textfield for the comment)
-        Div commentContent = new Div();
-        commentContent.setWidthFull(); // Make the row take full width
-
-        commentContent.getStyle().set("text-align", "left");
-        commentContent.getStyle()
-                .set("white-space", "pre-wrap")
-                .set("overflow-wrap", "break-word")
-                .set("word-break", "break-word")
-                .set("max-width", "750px")
-                .set("color", "#ffffff");  // White text
-        commentContent.setText(postData.getPostContent());
-
-        // Display number of likes
-        HorizontalLayout likesRow = new HorizontalLayout();
-        likesRow.setJustifyContentMode(JustifyContentMode.BETWEEN);
-        likesRow.setAlignItems(Alignment.CENTER);
-        likesRow.getStyle()
-                .set("width", "725px"); // ✅ 700px for comment card
-
-        // Likes count
-        Span likesCount = new Span("Liked: " + postData.getLikes());
-        likesCount.getStyle()
-                .set("font-size", "14px")
-                .set("color", "#ffffff")  // White text
-                .set("white-space", "nowrap");
-
-        // Like button avatar
-        LikeButton likeButton = new LikeButton(postData);
-        likeButton.getStyle()
-                .set("background-color", "white")  // Avoid dark background affecting the avatar
-                .set("color", "black")  // Ensure the text/initials stay white
-                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
-        likesRow.add(likesCount, likeButton);
-
-        // Add everything to the layout
-        commentCardLayout.add(topRow, commentContent, likesRow);
-
-        UserPost userPostInstance = new UserPost();
-        commentCardLayout.add(userPostInstance.createReplyInputSection(postData));
-
-        return commentCardLayout;
-    }
-
-    // Define the Reply Card
-    public VerticalLayout createReplyCard(Post postData) {
-        // Reply card layout container
-        VerticalLayout replyCardLayout = new VerticalLayout();
-        replyCardLayout.addClassName("hover-card");
-
-        replyCardLayout.setAlignItems(Alignment.START);
-        replyCardLayout.setSpacing(true);
-        replyCardLayout.setPadding(true);
-        replyCardLayout.setWidth("800px");
-        replyCardLayout.getStyle()
-                .set("border", "1px solid #ccc")
-                .set("border-radius", "10px")  // ✅ add smooth edges
-                .set("padding", "10px")
-                .set("background-color", "#1a1a1b")  // Dark background
-                .set("color", "#ffffff");  // White text
-
-        Post parentPost = UserPost.findPostById(postData.getParentId());
-
-        // 🔝 Parent post info
-        HorizontalLayout topRow = new HorizontalLayout();
-        Avatar originalAvatar = new Avatar(parentPost != null ? parentPost.getUserName() : "Unknown");
-        originalAvatar.getStyle()
-                .set("background-color", "white")
-                .set("color", "black");
-
-        Span originalPoster = new Span(parentPost != null ? parentPost.getUserName() : "Unknown");
-        originalPoster.getStyle().set("color", "#ffffff");  // White text
-        Span originalTime = new Span("Posted on: " + Post.formatTimestamp(parentPost != null ? parentPost.getTimestamp() : postData.getTimestamp()));
-        originalTime.getStyle().set("color", "#ffffff");  // White text
-        topRow.add(originalAvatar, originalPoster, originalTime);
-        topRow.setWidthFull();
-        topRow.setJustifyContentMode(JustifyContentMode.START);
-        topRow.setAlignItems(Alignment.CENTER);
-
-        // 💬 Parent post content
-        Div originalPostContent = new Div();
-        originalPostContent.getStyle()
-                .set("white-space", "pre-wrap")
-                .set("overflow-wrap", "break-word")
-                .set("word-break", "break-word")
-                .set("max-width", "750px")
-                .set("border", "1px solid #ccc")
-                .set("border-radius", "5px")
-                .set("padding", "10px")
-                .set("margin-bottom", "10px")
-                .set("color", "#ffffff");  // White text
-        originalPostContent.setText(parentPost != null ? parentPost.getPostContent() : "Original post not found");
-
-        // ❤️ Likes row for parent post
-        HorizontalLayout parentLikesRow = new HorizontalLayout();
-        if (parentPost != null) {
-            parentLikesRow.setWidth("750px");
-            parentLikesRow.setJustifyContentMode(JustifyContentMode.BETWEEN);
-            parentLikesRow.setAlignItems(Alignment.CENTER);
-
-            Span parentLikesCount = new Span("Liked: " + parentPost.getLikes());
-            parentLikesCount.getStyle()
-                    .set("font-size", "14px")
-                    .set("color", "#ffffff")  // White text
-                    .set("white-space", "nowrap");
-
-            HorizontalLayout parentLikeButtonWrapper = new HorizontalLayout();
-            parentLikeButtonWrapper.setWidthFull();
-            parentLikeButtonWrapper.setJustifyContentMode(JustifyContentMode.END);
-            parentLikeButtonWrapper.add(new LikeButton(parentPost));
-
-            parentLikesRow.add(parentLikesCount, parentLikeButtonWrapper);
-        }
-
-        // 🧱 Add parent post section
-        replyCardLayout.add(topRow, originalPostContent);
-        if (parentPost != null) replyCardLayout.add(parentLikesRow);
-
-        // 🔽 Reply input section to reply to the *parent*
-        if (parentPost != null) {
-            replyCardLayout.add(new UserPost().createReplyInputSection(parentPost));
-        }
-
-        // 🔁 Reply meta info
-        HorizontalLayout replyMeta = new HorizontalLayout();
-        Avatar replyAvatar = new Avatar(postData.getUserName());
-        replyAvatar.getStyle()
-                .set("background-color", "white")  // Avoid dark background affecting the avatar
-                .set("color", "black")  // Ensure the text/initials stay white
-                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
-
-        Span replyUser = new Span(postData.getUserName());
-        replyUser.getStyle().set("color", "#ffffff");  // White text
-        Span replyTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
-        replyTime.getStyle().set("color", "#ffffff");  // White text
-        replyMeta.add(replyAvatar, replyUser, replyTime);
-        replyMeta.setWidthFull();
-        replyMeta.setJustifyContentMode(JustifyContentMode.START);
-        replyMeta.setAlignItems(Alignment.CENTER);
-        replyMeta.getStyle().set("margin-left", "50px");
-
-        // 📝 Reply content
-        Div replyContent = new Div();
-        replyContent.getStyle()
-                .set("white-space", "pre-wrap")
-                .set("overflow-wrap", "break-word")
-                .set("word-break", "break-word")
-                .set("max-width", "750px")
-                .set("margin-left", "50px")
-                .set("color", "#ffffff");  // White text
-        replyContent.setText(postData.getPostContent());
-
-        // 👍 Likes row for reply post
-        HorizontalLayout likesRow = new HorizontalLayout();
-        likesRow.setWidth("700px");
-        likesRow.setAlignItems(Alignment.CENTER);
-        likesRow.getStyle().set("margin-left", "50px");
-
-        Span likesCount = new Span("Liked: " + postData.getLikes());
-        likesCount.getStyle()
-                .set("font-size", "14px")
-                .set("color", "#ffffff")  // White text
-                .set("white-space", "nowrap");
-
-        HorizontalLayout buttonWrapper = new HorizontalLayout();
-        buttonWrapper.setWidthFull();
-        buttonWrapper.setJustifyContentMode(JustifyContentMode.END);
-        buttonWrapper.add(new LikeButton(postData));
-
-        likesRow.add(likesCount, buttonWrapper);
-
-        // Add the reply content
-        replyCardLayout.add(replyMeta, replyContent, likesRow);
-
-        // 🔽 Reply input section to reply to this *reply*
-        replyCardLayout.add(new UserPost().createReplyInputSection(postData));
-
-        return replyCardLayout;
-    }
-
-
-
-    private Component createPostInputCard() {
-        VerticalLayout postLayout = new VerticalLayout();
-        postLayout.addClassName("hover-card");
-        postLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-        postLayout.setSpacing(true);
-        postLayout.setPadding(true);
-        postLayout.getStyle().set("border", "1px solid #ccc");
-        postLayout.getStyle().set("border-radius", "10px");
-        postLayout.getStyle().set("padding", "20px");
-        postLayout.setWidth("800px");
-        postLayout.getStyle().set("background-color", "#1a1a1b")  // Dark background
-                .set("color", "#ffffff");  // White text
-        postLayout.getStyle().set("padding-top", "10px");
-
-        // Get current user
-        String currentUsername = getLoggedInUsername();
-        User user = User.loadFromFile(currentUsername);
-
-        // Top: Avatar + Name
-        HorizontalLayout topRow = new HorizontalLayout();
-        Avatar avatar = new Avatar(currentUsername);
-        avatar.getStyle()
-                .set("background-color", "white")  // Avoid dark background affecting the avatar
-                .set("color", "black")  // Ensure the text/initials stay white
-                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
-
-
-        Span name = new Span(currentUsername);
-        name.getStyle().set("color", "#ffffff");  // White text
-        name.getStyle().set("font-weight", "bold");
-        topRow.add(avatar, name);
-
-        // Second Row: Number of Posts + Likes
-        HorizontalLayout statsRow = new HorizontalLayout();
-        Span postCount = new Span("Posts: " + user.getPostCount());
-        postCount.getStyle().set("color", "#ffffff");  // White text
-        Span likeCount = new Span("Likes: " + user.getLikeCount());
-        likeCount.getStyle().set("color", "#ffffff");  // White text
-        statsRow.add(postCount, likeCount);
-
-        // Third Row: Text Field
-        TextArea postArea = new TextArea();
-        UserPost userPost = new UserPost();
-        postArea.getElement().getStyle()
+    private Component createAvatarSelectionCard() {
+        VerticalLayout card = new VerticalLayout();
+        card.setWidth("600px");
+        card.getStyle()
                 .set("background-color", "#1a1a1b")
-                .set("color", "#A0B3B6")             // Soft text color
-                .set("caret-color", "#d3e3fd")       // Slightly bright caret
-                .set("border", "1px solid #6c7a89")  // Rounded border with specified color
-                .set("border-radius", "8px")         // Rounded corners (adjust as needed)
-                .set("padding", "8px");              // Optional: more breathing room
+                .set("border", "1px solid #343536")
+                .set("border-radius", "8px")
+                .set("padding", "16px")
+                .set("color", "#d7dadc")
+                .set("box-shadow", "0 1px 3px rgba(0, 0, 0, 0.3)")
+                .set("margin", "0 auto"); // center horizontally if possible
 
-//#d3e3fd
-        userPost.applySimulatedPlaceholder(postArea, "What's on your mind?", "#A0B3B6");
+        // Title
+        H4 title = new H4("Choose Your Avatar");
+        title.getStyle().set("color", "#d7dadc").set("margin", "0 0 12px 0");
 
-        postArea.setWidthFull();
-        postArea.setHeight("120px");
-//#6c7a89
-        // Fourth Row: Post Button
-        Button postButton = new Button("Post", e -> {
-            if (!postArea.isEmpty()) {
-                UserPost.createAndSaveNewPost(postArea.getValue());
-                postArea.clear();
-                getUI().ifPresent(ui -> ui.getPage().reload()); // simple reload to refresh posts
+        // Upload component
+        MemoryBuffer buffer = new MemoryBuffer();
+        Upload upload = new Upload(buffer);
+        String username = getLoggedInUsername();  // Or however you're retrieving it
+
+        int maxSizeInBytes = 5 * 1024 * 1024;
+        String avatarDirPath = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users/" + username + "/Avatar";
+
+        upload.addFileRejectedListener(event -> {
+            Notification.show("File is too large. Max size is 5 MB.");
+        });
+
+        upload.addSucceededListener(event -> {
+            if (event.getContentLength() > maxSizeInBytes) {
+                Notification.show("File exceeds 5 MB limit");
+                upload.getElement().callJsFunction("clearFileList");
+                return;
+            }
+
+            InputStream fileData = buffer.getInputStream();
+            String fileName = event.getFileName();
+            Path avatarDir = Paths.get(avatarDirPath);
+
+            try {
+                // Ensure the avatar directory exists
+                Files.createDirectories(avatarDir);
+
+                // Delete any existing files in the avatar directory
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(avatarDir)) {
+                    for (Path file : stream) {
+                        Files.deleteIfExists(file);
+                    }
+                }
+
+                // Save the new avatar file
+                Path targetPath = avatarDir.resolve(fileName);
+                Files.copy(fileData, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+                Notification.show("Avatar uploaded successfully!");
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                Notification.show("Failed to upload avatar.");
             }
         });
 
-        postButton.getStyle()
-                .set("background-color", "#E0E0E0")  // light grayish-white
-                .set("color", "#333333")             // dark text for contrast
-                .set("border", "none")
-                .set("border-radius", "4px")
-                .set("font-weight", "bold")
-                .set("box-shadow", "none");          // keep it flat (dull look)
+        upload.setMaxFiles(1);
+        upload.setDropAllowed(true);
+        upload.setAutoUpload(true);
+        upload.getStyle()
+                .set("border", "2px dashed #555")
+                .set("padding", "20px")
+                .set("background-color", "#2c2f33")
+                .set("border-radius", "10px")
+                .set("color", "#ccc")
+                .set("cursor", "pointer");
 
 
-        postLayout.add(topRow, statsRow, postArea, postButton);
-        return postLayout;
-    }
-    private void styleInputCard(Component card) {
-        card.getElement().getStyle()
-                .set("width", "800px")
-                .set("margin-left", "auto")
-                .set("margin-right", "auto")
-                .set("margin-top", "15px");
+        Span helper = new Span("Drag and drop or click to upload an image");
+        helper.getStyle().set("font-size", "12px").set("color", "#999").set("margin-top", "8px");
+
+        card.add(title, upload, helper);
+
+        return card;
     }
 
     private String getLoggedInUsername() {
@@ -775,38 +419,6 @@ public class AvatarSelection extends VerticalLayout {
         } catch (Exception e) {
             e.printStackTrace();
             return "unknown";
-        }
-    }
-    private void loadPosts() {
-        if (sortMode == 0) {
-            allPosts = UserPost.readPostsFromFiles();
-            sortButton.setText("New");  // Update button label
-        } else {
-            allPosts = UserPost.readPostsSortedByLikes();
-            sortButton.setText("Top");
-        }
-
-        Component inputCard = createPostInputCard();
-        styleInputCard(inputCard);
-
-        List<Object> items = new ArrayList<>();
-        items.add(middleBar);
-        items.add(inputCard);
-        items.addAll(allPosts);
-
-        postList.setItems(items);
-    }
-
-    private void updateSortButtonHighlight() {
-        // Remove existing highlight
-        sortNewButton.removeClassName("popup-hover-item-active");
-        sortTopButton.removeClassName("popup-hover-item-active");
-
-        // Apply highlight depending on sortMode
-        if (sortMode == 0) {
-            sortNewButton.addClassName("popup-hover-item-active");
-        } else {
-            sortTopButton.addClassName("popup-hover-item-active");
         }
     }
 

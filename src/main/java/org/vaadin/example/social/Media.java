@@ -22,13 +22,19 @@ import com.vaadin.flow.router.RouterLink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Stream;
 
 @Route("media")  // Defines the route for this view. When navigating to '/media', this view is displayed.
 public class Media extends VerticalLayout {
+
     private static final Logger log = LoggerFactory.getLogger(Media.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
 
     private Button sortNewButton;
@@ -48,6 +54,7 @@ public class Media extends VerticalLayout {
         setPadding(false);
         getStyle().set("background-color", "#1a1a1b");  // Baby blue background
         String username = getLoggedInUsername();
+        String avatarUrl = "/avatar/" + username + "/" + getAvatarFilenameForUser(username);
 
 
 
@@ -56,11 +63,18 @@ public class Media extends VerticalLayout {
                                  .set("border-radius", "16px")  // Adjust the value as needed to round the corners
                                  .set("overflow", "hidden"); // This clips the content to the rounded corners
 
-        Avatar userAvatar2 = new Avatar(username);
+
+        // Get the avatar image URL for this user
+
+// Create avatar with image (not initials)
+        Avatar userAvatar2 = new Avatar();
+        userAvatar2.setImage(avatarUrl);
+
+// Style the avatar
         userAvatar2.getStyle()
                 .set("background-color", "white")
-                .set("color", "black")
                 .set("border", "1px solid black");
+
 
 // Wrap avatar in RouterLink
         RouterLink avatarLink = new RouterLink();
@@ -95,9 +109,13 @@ public class Media extends VerticalLayout {
         userRow.setSpacing(true);  // Add some space between Avatar and the user info
 
 // === Add the Second Avatar to a Different Layout or Row ===
+
+
+// Now create the layout with avatar and user info
         HorizontalLayout secondAvatarLayout = new HorizontalLayout(avatarLink, userInfoLayout);
-        secondAvatarLayout.setAlignItems(FlexComponent.Alignment.CENTER);  // Center the second avatar
+        secondAvatarLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         secondAvatarLayout.setSpacing(true);
+
 
 
         Button logoutButton = new Button("Logout", event -> {
@@ -109,13 +127,15 @@ public class Media extends VerticalLayout {
         popoverContent.add(secondAvatarLayout, logoutButton);
 
         Avatar userAvatar = new Avatar(username);
+        userAvatar.setImage(avatarUrl);  // Set the user's avatar image
+
         userAvatar.getStyle()
                 .set("background-color", "white")  //White background
                 .set("color", "black")  // black text
                 .set("border", "1px solid, black");  // white border
         // Create the popover once outside the click event
         Popover popover = new Popover();
-        popover.setTarget(userAvatar);
+        popover.setTarget(userAvatar2);
         popover.setPosition(PopoverPosition.BOTTOM);
         popover.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
         popover.add(popoverContent);  // Add content to the popover only once
@@ -148,6 +168,7 @@ public class Media extends VerticalLayout {
                 isOpened[0] = false;
             }
         });
+
 
         Icon notificationBell = new Icon(VaadinIcon.BELL);
         notificationBell.getElement().getStyle()
@@ -224,7 +245,7 @@ public class Media extends VerticalLayout {
         centerLayout.setWidthFull();
         centerLayout.getStyle().set("color", "#333");  // Text color stays dark grey
 
-        HorizontalLayout rightLayout = new HorizontalLayout(notificationBell, userAvatar);
+        HorizontalLayout rightLayout = new HorizontalLayout(notificationBell, userAvatar2);
         rightLayout.setJustifyContentMode(JustifyContentMode.END);
         rightLayout.setAlignItems(Alignment.CENTER);
         rightLayout.setWidthFull();
@@ -466,6 +487,24 @@ public class Media extends VerticalLayout {
 
     }
 
+    private String getAvatarFilenameForUser(String username) {
+        Path avatarDir = Paths.get("users", username, "Avatar");
+
+        if (Files.exists(avatarDir) && Files.isDirectory(avatarDir)) {
+            try (Stream<Path> files = Files.list(avatarDir)) {
+                return files
+                        .filter(Files::isRegularFile)
+                        .map(Path::getFileName)
+                        .map(Path::toString)
+                        .findFirst()
+                        .orElse("default.png"); // fallback if no file found
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return "default.png"; // fallback if folder missing or error
+    }
     // Define the Comment Card
     public VerticalLayout createCommentCard(Post postData) {
         // Create the container for the card layout
@@ -487,20 +526,35 @@ public class Media extends VerticalLayout {
 
         // Top: Avatar + User Name + Posted on: Date
         HorizontalLayout topRow = new HorizontalLayout();
-        Avatar userAvatar = new Avatar(postData.getUserName());
-        userAvatar.getStyle()
-                .set("background-color", "white")  // Avoid dark background affecting the avatar
-                .set("color", "black")  // Ensure the text/initials stay white
-                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
+        // Get the username from post data
+        String username = postData.getUserName();
 
-        Span userName = new Span(postData.getUserName());
-        userName.getStyle().set("color", "#ffffff");  // White text
+// Get the avatar image URL for this user (implement this method based on your setup)
+        String avatarUrl = "/avatar/" + username + "/" + getAvatarFilenameForUser(username);
+
+// Create avatar without initials but with the user image
+        Avatar userAvatar = new Avatar();
+        userAvatar.setImage(avatarUrl);  // Set the user's uploaded image
+
+// Style the avatar (white background, black border)
+        userAvatar.getStyle()
+                .set("background-color", "white")
+                .set("border", "1px solid #ffffff");
+
+// Username label with white text
+        Span userName = new Span(username);
+        userName.getStyle().set("color", "#ffffff");
+
+// Post time label with white text
         Span commentTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
-        commentTime.getStyle().set("color", "#ffffff");  // White text
+        commentTime.getStyle().set("color", "#ffffff");
+
+// Add components to the horizontal layout row
         topRow.add(userAvatar, userName, commentTime);
-        topRow.setWidthFull(); // Make the row take full width
-        topRow.setJustifyContentMode(JustifyContentMode.START); // Align content to start (left)
-        topRow.setAlignItems(Alignment.CENTER); // Vertically center inside the row
+        topRow.setWidthFull();
+        topRow.setJustifyContentMode(JustifyContentMode.START);
+        topRow.setAlignItems(Alignment.CENTER);
+
 
         // Comment content (Textfield for the comment)
         Div commentContent = new Div();
@@ -567,10 +621,16 @@ public class Media extends VerticalLayout {
 
         // 🔝 Parent post info
         HorizontalLayout topRow = new HorizontalLayout();
-        Avatar originalAvatar = new Avatar(parentPost != null ? parentPost.getUserName() : "Unknown");
+        String originalUsername = parentPost != null ? parentPost.getUserName() : "Unknown";
+        String avatarFilename = getAvatarFilenameForUser(originalUsername); // Same helper method
+        String avatarUrl = "/avatar/" + originalUsername + "/" + avatarFilename;
+
+        Avatar originalAvatar = new Avatar();
+        originalAvatar.setImage(avatarUrl);  // Show the uploaded image
+
         originalAvatar.getStyle()
                 .set("background-color", "white")
-                .set("color", "black");
+                .set("border", "1px solid #ffffff");
 
         Span originalPoster = new Span(parentPost != null ? parentPost.getUserName() : "Unknown");
         originalPoster.getStyle().set("color", "#ffffff");  // White text
@@ -702,13 +762,19 @@ public class Media extends VerticalLayout {
         String currentUsername = getLoggedInUsername();
         User user = User.loadFromFile(currentUsername);
 
-        // Top: Avatar + Name
         HorizontalLayout topRow = new HorizontalLayout();
-        Avatar avatar = new Avatar(currentUsername);
+
+// Build avatar image path
+        String avatarFilename = getAvatarFilenameForUser(currentUsername); // same helper method you already use
+        String avatarUrl = "/avatar/" + currentUsername + "/" + avatarFilename;
+
+        Avatar avatar = new Avatar();
+        avatar.setImage(avatarUrl); // Use image instead of initials
+
         avatar.getStyle()
-                .set("background-color", "white")  // Avoid dark background affecting the avatar
-                .set("color", "black")  // Ensure the text/initials stay white
-                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
+                .set("background-color", "white")
+                .set("border", "1px solid #ffffff");  // Optional styling
+
 
 
         Span name = new Span(currentUsername);

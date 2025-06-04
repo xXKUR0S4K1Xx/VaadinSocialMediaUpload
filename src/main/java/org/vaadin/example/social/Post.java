@@ -6,8 +6,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 // Represents a single post or reply in the system
-// Represents a single post or reply in the system
-// Represents a single post or reply in the system
 public class Post {
     private String postId;          // Unique identifier for this post
     private String parentId;        // ID of the parent post (0 if this is not a reply)
