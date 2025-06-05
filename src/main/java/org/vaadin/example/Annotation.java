@@ -4,7 +4,13 @@ public class Annotation {
 }
 /*
 
-Manually fix the
+To do:
+Status der user.
+popup mit status der user
+Freundschaftsanfragen
+Notifications.
+Search users/threads
+Whitemode/darkmode
 
 ForUserPage copy and paste this:
     postList = new VirtualList<>();

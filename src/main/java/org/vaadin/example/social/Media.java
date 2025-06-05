@@ -144,7 +144,7 @@ public class Media extends VerticalLayout {
         boolean[] isOpened = {false};
 
         // Handle the click event to toggle the popover visibility
-        userAvatar.getElement().addEventListener("click", event -> {
+        userAvatar2.getElement().addEventListener("click", event -> {
             if (!isOpened[0]) {
                 // Open the popover if it's not opened
                 popover.setOpened(true);
@@ -687,16 +687,23 @@ public class Media extends VerticalLayout {
 
         // 🔁 Reply meta info
         HorizontalLayout replyMeta = new HorizontalLayout();
-        Avatar replyAvatar = new Avatar(postData.getUserName());
-        replyAvatar.getStyle()
-                .set("background-color", "white")  // Avoid dark background affecting the avatar
-                .set("color", "black")  // Ensure the text/initials stay white
-                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
 
-        Span replyUser = new Span(postData.getUserName());
-        replyUser.getStyle().set("color", "#ffffff");  // White text
+        String replyUsername = postData.getUserName();
+        String replyAvatarFilename = getAvatarFilenameForUser(replyUsername);
+        String replyAvatarUrl = "/avatar/" + replyUsername + "/" + replyAvatarFilename;
+
+        Avatar replyAvatar = new Avatar();
+        replyAvatar.setImage(replyAvatarUrl);  // ✅ Correctly use the reply user's image
+        replyAvatar.getStyle()
+                .set("background-color", "white")
+                .set("border", "1px solid #ffffff");
+
+        Span replyUser = new Span(replyUsername);
+        replyUser.getStyle().set("color", "#ffffff");
+
         Span replyTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
-        replyTime.getStyle().set("color", "#ffffff");  // White text
+        replyTime.getStyle().set("color", "#ffffff");
+
         replyMeta.add(replyAvatar, replyUser, replyTime);
         replyMeta.setWidthFull();
         replyMeta.setJustifyContentMode(JustifyContentMode.START);
