@@ -4,6 +4,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -54,7 +55,6 @@ public class UserPage extends VerticalLayout {
         getStyle().set("background-color", "#1a1a1b");  // Baby blue background
         String username = getLoggedInUsername();
         String avatarUrl = "/avatar/" + username + "/" + getAvatarFilenameForUser(username);
-
 
 
         VerticalLayout popoverContent = new VerticalLayout();
@@ -116,13 +116,12 @@ public class UserPage extends VerticalLayout {
         secondAvatarLayout.setSpacing(true);
 
 
-
         Button logoutButton = new Button("Logout", event -> {
             // Implement logout logic here
             getUI().ifPresent(ui -> ui.navigate("login"));
         });
         logoutButton.getStyle().set("color", "white")
-                               .set("font-size", "14px");
+                .set("font-size", "14px");
 
 
         Button backToMediaButton = new Button("Go to the Homepage", event -> {
@@ -130,7 +129,7 @@ public class UserPage extends VerticalLayout {
             getUI().ifPresent(ui -> ui.navigate("media"));
         });
         backToMediaButton.getStyle().set("color", "white")  // Set text color to white
-                                    .set("font-size", "14px");
+                .set("font-size", "14px");
 
 
         Button avatarCreatingButton = new Button("Upload your own Avatar", event -> {
@@ -138,7 +137,7 @@ public class UserPage extends VerticalLayout {
             getUI().ifPresent(ui -> ui.navigate("avatarselection"));
         });
         avatarCreatingButton.getStyle().set("color", "white")
-                                       .set("font-size", "14px");
+                .set("font-size", "14px");
 
         popoverContent.add(secondAvatarLayout, avatarCreatingButton, backToMediaButton, logoutButton);
 
@@ -381,7 +380,8 @@ public class UserPage extends VerticalLayout {
 
 
 // Create the horizontal layout wrapper and center the button
-        middleBar = new HorizontalLayout(sortButtonWrapper);        middleBar.setWidth("800px"); // Fixed width
+        middleBar = new HorizontalLayout(sortButtonWrapper);
+        middleBar.setWidth("800px"); // Fixed width
         middleBar.setHeight("20px");
         middleBar.getElement().getStyle().set("margin-left", "auto");  // Center the card horizontally.
         middleBar.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
@@ -449,14 +449,12 @@ public class UserPage extends VerticalLayout {
 
 // ===== Sidebar (Overlay) =====
         VerticalLayout sideBar = new VerticalLayout();
-        sideBar.setHeight("95%");
+        sideBar.setHeightFull();
         sideBar.setWidth("200px");
         sideBar.getStyle()
-                .set("position", "absolute")  // Detach from layout flow
                 .set("bottom", "0")
                 .set("left", "0")
                 .set("z-index", "1000")
-                .set("border-top", "1px solid #666")
                 .set("border-right", "1px solid #666")
                 .set("background-color", "#1a1a1b")
                 .set("color", "#FFFFFF");
@@ -482,24 +480,28 @@ public class UserPage extends VerticalLayout {
         sideBar.add(homeLayout, popularLayout, forYouLayout, allLayout);
 
 // ===== Filler (Overlay) =====
+// Create the filler layout
         VerticalLayout filler = new VerticalLayout();
-        filler.setHeight("95%");
+        filler.setHeightFull();
         filler.setWidth("200px");
         filler.setAlignItems(Alignment.END);
 
         filler.getStyle()
-                .set("position", "absolute")
                 .set("bottom", "0")
                 .set("right", "0")
-                .set("border-top", "1px solid #666")
-                .set("background-color", "#1a1a1b");
+                .set("background-color", "#1a1a1b")
+                .set("border-left", "1px solid #444");
+
+// Create the UserCard and add it to filler
+        VerticalLayout userCard = createUserCard("MyUser", 42, 128, List.of("Topic1", "Topic2", "Topic3", "Topic4"));
+        filler.add(userCard);
 
 // ===== Content =====
-        layout.add(content); // Only content is part of layout flow
+        layout.add(sideBar, content, filler); // Only content is part of layout flow
+        layout.setFlexGrow(1, content);       // Only content should grow
 
 // Add overlays after layout
-        add(rootLayout, layout, sideBar, filler);  // Add overlays separately
-
+        add(rootLayout, layout);
     }
 
     private String getAvatarFilenameForUser(String username) {
@@ -520,6 +522,94 @@ public class UserPage extends VerticalLayout {
 
         return "default.png"; // fallback if folder missing or error
     }
+
+    public VerticalLayout createUserCard(String username, int likes, int followers, List<String> subscriptions) {
+        VerticalLayout userCardLayout = new VerticalLayout();
+        userCardLayout.addClassName("hover-card");
+
+        userCardLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        userCardLayout.setSpacing(false);
+        userCardLayout.setPadding(true);
+        userCardLayout.getStyle()
+                .set("border", "1px solid #ccc")
+                .set("border-radius", "10px")
+                .set("padding", "10px")
+                .set("margin", "0")
+                .set("background-color", "#1a1a1b")
+                .set("color", "#ffffff");
+
+        userCardLayout.setWidthFull(); // Use full width of parent container
+
+        // Avatar
+        Avatar avatar = new Avatar();
+        avatar.setImage("/avatar/" + username + "/" + getAvatarFilenameForUser(username));
+        avatar.setWidth("50%");
+        avatar.setHeight("auto"); // maintain aspect ratio
+        avatar.getStyle()
+                .set("background-color", "white")
+                .set("border", "1px solid #ffffff");
+        userCardLayout.add(avatar);
+
+        // Username
+        Span name = new Span(username);
+        name.getStyle().set("font-weight", "bold").set("font-size", "1rem");
+        userCardLayout.add(name);
+
+        // Divider
+        userCardLayout.add(new Hr());
+
+        // Status Section
+        Span statusLabel = new Span("Status:");
+        statusLabel.getStyle().set("font-weight", "bold").set("margin-bottom", "5px");
+
+        TextArea statusArea = new TextArea();
+        statusArea.setPlaceholder("Write your status here...");
+        statusArea.setWidth("100%");
+        statusArea.getStyle()
+                .set("background-color", "#2a2a2b")
+                .set("color", "#ffffff")
+                .set("border", "1px solid #555")
+                .set("border-radius", "5px");
+
+        Button saveButton = new Button("Save");
+        saveButton.getStyle()
+                .set("background-color", "#3a3a3c")
+                .set("color", "#ffffff")
+                .set("margin-top", "5px");
+
+        VerticalLayout statusLayout = new VerticalLayout(statusLabel, statusArea, saveButton);
+        statusLayout.setPadding(false);
+        statusLayout.setSpacing(false);
+        statusLayout.setWidthFull();
+        userCardLayout.add(statusLayout);
+
+        // Divider
+        userCardLayout.add(new Hr());
+
+        // Likes & Followers
+        Span likesSpan = new Span("Likes: " + likes);
+        Span followersSpan = new Span("Followers: " + followers);
+        likesSpan.getStyle().set("font-size", "0.9rem");
+        followersSpan.getStyle().set("font-size", "0.9rem");
+        userCardLayout.add(likesSpan, followersSpan);
+
+        // Divider
+        userCardLayout.add(new Hr());
+
+        // Subscriptions
+        Span subHeader = new Span("Subscribed to:");
+        subHeader.getStyle().set("font-weight", "bold").set("font-size", "1rem");
+        userCardLayout.add(subHeader);
+
+        for (int i = 0; i < 4; i++) {
+            Span placeholder = new Span("XXXX");
+            placeholder.getStyle().set("color", "#cccccc").set("margin-left", "10px");
+            userCardLayout.add(placeholder);
+        }
+
+        return userCardLayout;
+    }
+
 
     // Define the Comment Card
     public VerticalLayout createCommentCard(Post postData) {

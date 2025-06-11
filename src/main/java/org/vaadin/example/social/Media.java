@@ -443,14 +443,12 @@ public class Media extends VerticalLayout {
 
 // ===== Sidebar (Overlay) =====
         VerticalLayout sideBar = new VerticalLayout();
-        sideBar.setHeight("95%");
+        sideBar.setHeightFull();
         sideBar.setWidth("200px");
         sideBar.getStyle()
-                .set("position", "absolute")  // Detach from layout flow
                 .set("bottom", "0")
                 .set("left", "0")
                 .set("z-index", "1000")
-                .set("border-top", "1px solid #666")
                 .set("border-right", "1px solid #666")
                 .set("background-color", "#1a1a1b")
                 .set("color", "#FFFFFF");
@@ -477,22 +475,23 @@ public class Media extends VerticalLayout {
 
 // ===== Filler (Overlay) =====
         VerticalLayout filler = new VerticalLayout();
-        filler.setHeight("95%");
+        filler.setHeightFull();
         filler.setWidth("200px");
         filler.setAlignItems(Alignment.END);
 
         filler.getStyle()
-                .set("position", "absolute")
                 .set("bottom", "0")
                 .set("right", "0")
-                .set("border-top", "1px solid #666")
-                .set("background-color", "#1a1a1b");
+                .set("background-color", "#1a1a1b")
+                .set("border-left", "1px solid #444"); // Border on the left side
+
 
 // ===== Content =====
-        layout.add(content); // Only content is part of layout flow
+        layout.add(sideBar, content, filler); // Only content is part of layout flow
+        layout.setFlexGrow(1, content);      // Only content should grow
 
 // Add overlays after layout
-        add(rootLayout, layout, sideBar, filler);  // Add overlays separately
+        add(rootLayout, layout);  // Add overlays separately
 
     }
 
