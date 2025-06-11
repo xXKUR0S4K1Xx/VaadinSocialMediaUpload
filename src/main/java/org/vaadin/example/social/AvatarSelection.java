@@ -109,9 +109,19 @@ public class AvatarSelection extends VerticalLayout {
             // Implement logout logic here
             getUI().ifPresent(ui -> ui.navigate("login"));
         });
-        logoutButton.getStyle().set("color", "white");  // Set text color to white
+        logoutButton.getStyle().set("color", "white")
+                                .set("font-size", "14px");
 
-        popoverContent.add(secondAvatarLayout, logoutButton);
+
+        Button backToMediaButton = new Button("Go to the Homepage", event -> {
+            // Implement logout logic here
+            getUI().ifPresent(ui -> ui.navigate("media"));
+        });
+        backToMediaButton.getStyle().set("color", "white")
+                                    .set("font-size", "14px");
+
+
+        popoverContent.add(secondAvatarLayout, backToMediaButton, logoutButton);
 
         Avatar userAvatar = new Avatar(username);
         userAvatar.getStyle()
@@ -254,7 +264,7 @@ public class AvatarSelection extends VerticalLayout {
         postList.setRenderer(new ComponentRenderer<>(component -> component));  // Single renderer
 
         postList.setWidthFull();   // Take full available width
-        postList.setHeight("800px");  // Fixed height or use setHeightFull() if you want full height
+        postList.setHeight("100%");  // Fixed height or use setHeightFull() if you want full height
 
         postList.getElement().getStyle().set("overflow", "hidden");  // Hide scrollbars if desired
 

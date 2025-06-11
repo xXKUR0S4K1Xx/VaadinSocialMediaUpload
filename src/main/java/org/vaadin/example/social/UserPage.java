@@ -121,9 +121,26 @@ public class UserPage extends VerticalLayout {
             // Implement logout logic here
             getUI().ifPresent(ui -> ui.navigate("login"));
         });
-        logoutButton.getStyle().set("color", "white");  // Set text color to white
+        logoutButton.getStyle().set("color", "white")
+                               .set("font-size", "14px");
 
-        popoverContent.add(secondAvatarLayout, logoutButton);
+
+        Button backToMediaButton = new Button("Go to the Homepage", event -> {
+            // Implement logout logic here
+            getUI().ifPresent(ui -> ui.navigate("media"));
+        });
+        backToMediaButton.getStyle().set("color", "white")  // Set text color to white
+                                    .set("font-size", "14px");
+
+
+        Button avatarCreatingButton = new Button("Upload your own Avatar", event -> {
+            // Implement logout logic here
+            getUI().ifPresent(ui -> ui.navigate("avatarselection"));
+        });
+        avatarCreatingButton.getStyle().set("color", "white")
+                                       .set("font-size", "14px");
+
+        popoverContent.add(secondAvatarLayout, avatarCreatingButton, backToMediaButton, logoutButton);
 
         Avatar userAvatar = new Avatar(username);
         userAvatar.setImage(avatarUrl);  // Set the user's avatar image
