@@ -8,6 +8,7 @@ import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -24,9 +25,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -36,7 +39,11 @@ import java.util.stream.Stream;
 @Route("userpage")  // Defines the route for this view. When navigating to '/media', this view is displayed.
 public class UserPage extends VerticalLayout {
     private static final Logger log = LoggerFactory.getLogger(Media.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
-
+    String password = "";
+    String username = getLoggedInUsername();
+    User user = new User(username, password);
+    int likes = user.getLikeCount();    int followers = 0; // Default, grows dynamically later
+    List<String> subscriptions = new ArrayList<>(); // Empty for now
     private Button sortNewButton;
     private Button sortTopButton;
     private HorizontalLayout middleBar;
@@ -54,7 +61,9 @@ public class UserPage extends VerticalLayout {
         setPadding(false);
         getStyle().set("background-color", "#1a1a1b");  // Baby blue background
         String username = getLoggedInUsername();
+
         String avatarUrl = "/avatar/" + username + "/" + getAvatarFilenameForUser(username);
+        password = user.getPassword();
 
 
         VerticalLayout popoverContent = new VerticalLayout();
@@ -493,7 +502,7 @@ public class UserPage extends VerticalLayout {
                 .set("border-left", "1px solid #444");
 
 // Create the UserCard and add it to filler
-        VerticalLayout userCard = createUserCard("MyUser", 42, 128, List.of("Topic1", "Topic2", "Topic3", "Topic4"));
+        VerticalLayout userCard = createUserCard(username, likes, followers, subscriptions);
         filler.add(userCard);
 
 // ===== Content =====
@@ -577,6 +586,54 @@ public class UserPage extends VerticalLayout {
                 .set("color", "#ffffff")
                 .set("margin-top", "5px");
 
+        saveButton.addClickListener(event -> {
+            String statusText = statusArea.getValue();
+
+            Path usersDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users");
+            Path userDir = usersDir.resolve(username);
+
+            try {
+                if (!Files.exists(usersDir)) {
+                    Files.createDirectory(usersDir);
+                }
+
+                if (!Files.exists(userDir)) {
+                    Files.createDirectory(userDir);
+                }
+
+                Path statusFile = userDir.resolve("Status.txt");
+
+                if (!Files.exists(statusFile)) {
+                    Files.createFile(statusFile);
+                }
+
+                Files.writeString(statusFile, statusText, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
+
+                Notification notification = new Notification();
+                notification.setDuration(3000);
+                notification.setPosition(Notification.Position.TOP_CENTER);
+
+                Span message = new Span("Status saved successfully!");
+                message.getStyle()
+                        .set("color", "#FF4500")          // Reddit orange
+                        .set("font-weight", "bold");
+
+                notification.add(message);
+
+                notification.getElement().getStyle()
+                        .set("background-color", "#1a1a1b")
+                        .set("border", "1px solid #FF4500")
+                        .set("border-radius", "8px")
+                        .set("box-shadow", "0 0 10px #FF4500");
+
+                notification.open();
+            } catch (IOException e) {
+                e.printStackTrace();
+                Notification.show("Error saving status: " + e.getMessage(), 5000, Notification.Position.TOP_CENTER);
+            }
+        });
+
+
         VerticalLayout statusLayout = new VerticalLayout(statusLabel, statusArea, saveButton);
         statusLayout.setPadding(false);
         statusLayout.setSpacing(false);
@@ -596,15 +653,22 @@ public class UserPage extends VerticalLayout {
         // Divider
         userCardLayout.add(new Hr());
 
-        // Subscriptions
+// Subscriptions
         Span subHeader = new Span("Subscribed to:");
         subHeader.getStyle().set("font-weight", "bold").set("font-size", "1rem");
         userCardLayout.add(subHeader);
 
-        for (int i = 0; i < 4; i++) {
-            Span placeholder = new Span("XXXX");
-            placeholder.getStyle().set("color", "#cccccc").set("margin-left", "10px");
-            userCardLayout.add(placeholder);
+// Placeholder Divs for each subscription
+        for (int i = 0; i < subscriptions.size(); i++) {
+            Div subscriptionDiv = new Div();
+            subscriptionDiv.setWidthFull(); // Use 100% of the card width
+            subscriptionDiv.getStyle()
+                    .set("min-height", "20px") // Gives the div some visible space even if empty
+                    .set("background-color", "#2a2a2b") // Optional: distinguish visually
+                    .set("border-radius", "4px")
+                    .set("margin-top", "5px");
+            // No content yet - will be filled later when the feature exists
+            userCardLayout.add(subscriptionDiv);
         }
 
         return userCardLayout;
