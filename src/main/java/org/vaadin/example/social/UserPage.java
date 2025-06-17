@@ -38,11 +38,14 @@ import java.util.stream.Stream;
 
 @Route("userpage")  // Defines the route for this view. When navigating to '/media', this view is displayed.
 public class UserPage extends VerticalLayout {
+
     private static final Logger log = LoggerFactory.getLogger(Media.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
+
     String password = "";
     String username = getLoggedInUsername();
     User user = new User(username, password);
-    int likes = user.getLikeCount();    int followers = 0; // Default, grows dynamically later
+    int likes = user.getLikeCount();
+    int followers = 0; // Default, grows dynamically later
     List<String> subscriptions = new ArrayList<>(); // Empty for now
     private Button sortNewButton;
     private Button sortTopButton;
@@ -501,9 +504,24 @@ public class UserPage extends VerticalLayout {
                 .set("background-color", "#1a1a1b")
                 .set("border-left", "1px solid #444");
 
-// Create the UserCard and add it to filler
-        VerticalLayout userCard = createUserCard(username, likes, followers, subscriptions);
+        List<String> subscriptions = new ArrayList<>(); // or get real subscriptions list
+
+        User user = User.loadFromFile(username);
+
+        VerticalLayout userCard;
+        if (user != null) {
+            int likes = user.getLikeCount();
+            int posts = user.getPostCount();
+            // get followers and subscriptions however you do here
+            userCard = createUserCard(username, likes, followers, subscriptions);
+        } else {
+            // fallback if user file missing
+            userCard = createUserCard(username, 0, 0, new ArrayList<>());
+        }
+
         filler.add(userCard);
+
+
 
 // ===== Content =====
         layout.add(sideBar, content, filler); // Only content is part of layout flow
