@@ -26,27 +26,24 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.nio.file.*;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Route("userpage")  // Defines the route for this view. When navigating to '/media', this view is displayed.
 public class UserPage extends VerticalLayout {
 
-    private static final Logger log = LoggerFactory.getLogger(Media.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
+    private static final Logger log = LoggerFactory.getLogger(Media.class);
 
-    String password = "";
-    String username = getLoggedInUsername();
-    User user = new User(username, password);
-    int likes = user.getLikeCount();
-    int followers = 0; // Default, grows dynamically later
-    List<String> subscriptions = new ArrayList<>(); // Empty for now
+    private String selectedUsername;
+    private User selectedUser;
+    private int likes;
+    private List<String> followers = new ArrayList<>();
+    private List<String> subscriptions = new ArrayList<>();
+
+
+
     private Button sortNewButton;
     private Button sortTopButton;
     private HorizontalLayout middleBar;
@@ -55,57 +52,82 @@ public class UserPage extends VerticalLayout {
     private List<Post> allPosts;
     private Button sortButton;
 
-
-    public UserPage() {  // Constructor that initializes the Media view.
-        setSizeFull();  // Set the layout to take up the entire available space.
-        setAlignItems(Alignment.CENTER);  // Align child components (like cards) to the center horizontally.
-        setSpacing(false);  // Disable spacing between the components.
+    public UserPage() {
+        setSizeFull();
+        setAlignItems(Alignment.CENTER);
+        setSpacing(false);
         setMargin(false);
         setPadding(false);
-        getStyle().set("background-color", "#1a1a1b");  // Baby blue background
-        String username = getLoggedInUsername();
+        getStyle().set("background-color", "#1a1a1b");
 
-        String avatarUrl = "/avatar/" + username + "/" + getAvatarFilenameForUser(username);
-        password = user.getPassword();
+        String username = "";
+        String avatarUrl = "";
+
+        try {
+            selectedUsername = Files.readString(Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/selecteduser.txt")).trim();
+            if (!selectedUsername.isEmpty()) {
+                selectedUser = User.loadFromFile(selectedUsername);
+                if (selectedUser != null) {
+                    username = selectedUser.getUsername();
+
+                    Path followBasePath = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Follow");
+
+                    Path followingPath = followBasePath.resolve("Following");
+                    Path followedByPath = followBasePath.resolve("FollowedBy");
+
+                    if (Files.exists(followingPath)) {
+                        try (DirectoryStream<Path> stream = Files.newDirectoryStream(followingPath)) {
+                            for (Path file : stream) {
+                                subscriptions.add(file.getFileName().toString().replace(".txt", ""));
+                            }
+                        }
+                    }
+
+                    if (Files.exists(followedByPath)) {
+                        try (DirectoryStream<Path> stream = Files.newDirectoryStream(followedByPath)) {
+                            for (Path file : stream) {
+                                followers.add(file.getFileName().toString().replace(".txt", ""));
+                            }
+                        }
+                    }
+
+                    System.out.println("Followers: " + followers);
+                    System.out.println("Subscriptions: " + subscriptions);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
 
         VerticalLayout popoverContent = new VerticalLayout();
-        popoverContent.getStyle().set("background-color", "#282b30")  // Apply the color you need
-                .set("border-radius", "16px")  // Adjust the value as needed to round the corners
-                .set("overflow", "hidden"); // This clips the content to the rounded corners
+        popoverContent.getStyle()
+                .set("background-color", "#282b30")
+                .set("border-radius", "16px")
+                .set("overflow", "hidden");
 
-
-        // Get the avatar image URL for this user
-
-// Create avatar with image (not initials)
         Avatar userAvatar2 = new Avatar();
         userAvatar2.setImage(avatarUrl);
-
-// Style the avatar
         userAvatar2.getStyle()
                 .set("background-color", "white")
                 .set("border", "1px solid black");
 
-
-// Wrap avatar in RouterLink
         RouterLink avatarLink = new RouterLink();
-        avatarLink.setRoute(UserPage.class); // replace with actual class
+        avatarLink.setRoute(UserPage.class);
         avatarLink.add(userAvatar2);
-
-// Optional: remove link styling
         avatarLink.getStyle().set("text-decoration", "none");
+
         RouterLink userpageLink = new RouterLink();
         userpageLink.setText("View Profile");
-        userpageLink.setRoute(UserPage.class); // Replace with your actual target view class
+        userpageLink.setRoute(UserPage.class);
         userpageLink.getStyle()
                 .set("font-weight", "bold")
                 .set("font-size", "14px")
                 .set("color", "white")
-                .set("text-decoration", "none"); // optional: remove underline
-
+                .set("text-decoration", "none");
 
         Div usernameDiv = new Div();
-        usernameDiv.setText(username); // Use the logged-in username
+        usernameDiv.setText(username);
         usernameDiv.getStyle()
                 .set("font-size", "13px")
                 .set("color", "#7e8f96");
@@ -115,123 +137,81 @@ public class UserPage extends VerticalLayout {
         userInfoLayout.setSpacing(false);
         userInfoLayout.setMargin(false);
 
-        HorizontalLayout userRow = new HorizontalLayout(userInfoLayout);
-        userRow.setAlignItems(FlexComponent.Alignment.CENTER);  // Center vertically
-        userRow.setSpacing(true);  // Add some space between Avatar and the user info
-
-// === Add the Second Avatar to a Different Layout or Row ===
-
-
-// Now create the layout with avatar and user info
         HorizontalLayout secondAvatarLayout = new HorizontalLayout(avatarLink, userInfoLayout);
         secondAvatarLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         secondAvatarLayout.setSpacing(true);
 
+        Button logoutButton = new Button("Logout", event -> getUI().ifPresent(ui -> ui.navigate("login")));
+        logoutButton.getStyle().set("color", "white").set("font-size", "14px");
 
-        Button logoutButton = new Button("Logout", event -> {
-            // Implement logout logic here
-            getUI().ifPresent(ui -> ui.navigate("login"));
-        });
-        logoutButton.getStyle().set("color", "white")
-                .set("font-size", "14px");
+        Button backToMediaButton = new Button("Go to the Homepage", event -> getUI().ifPresent(ui -> ui.navigate("media")));
+        backToMediaButton.getStyle().set("color", "white").set("font-size", "14px");
 
-
-        Button backToMediaButton = new Button("Go to the Homepage", event -> {
-            // Implement logout logic here
-            getUI().ifPresent(ui -> ui.navigate("media"));
-        });
-        backToMediaButton.getStyle().set("color", "white")  // Set text color to white
-                .set("font-size", "14px");
-
-
-        Button avatarCreatingButton = new Button("Upload your own Avatar", event -> {
-            // Implement logout logic here
-            getUI().ifPresent(ui -> ui.navigate("avatarselection"));
-        });
-        avatarCreatingButton.getStyle().set("color", "white")
-                .set("font-size", "14px");
+        Button avatarCreatingButton = new Button("Upload your own Avatar", event -> getUI().ifPresent(ui -> ui.navigate("avatarselection")));
+        avatarCreatingButton.getStyle().set("color", "white").set("font-size", "14px");
 
         popoverContent.add(secondAvatarLayout, avatarCreatingButton, backToMediaButton, logoutButton);
 
         Avatar userAvatar = new Avatar(username);
-        userAvatar.setImage(avatarUrl);  // Set the user's avatar image
-
+        userAvatar.setImage(avatarUrl);
         userAvatar.getStyle()
-                .set("background-color", "white")  //White background
-                .set("color", "black")  // black text
-                .set("border", "1px solid, black");  // white border
-        // Create the popover once outside the click event
+                .set("background-color", "white")
+                .set("color", "black")
+                .set("border", "1px solid black");
+
         Popover popover = new Popover();
         popover.setTarget(userAvatar2);
         popover.setPosition(PopoverPosition.BOTTOM);
         popover.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
-        popover.add(popoverContent);  // Add content to the popover only once
+        popover.add(popoverContent);
 
-        // Create a variable to track if the popover is already opened
         boolean[] isOpened = {false};
-
-        // Handle the click event to toggle the popover visibility
         userAvatar2.getElement().addEventListener("click", event -> {
             if (!isOpened[0]) {
-                // Open the popover if it's not opened
                 popover.setOpened(true);
                 isOpened[0] = true;
-
-                // Set a timeout to keep the popover open for at least 1 second
-                getUI().ifPresent(ui -> ui.access(() -> {
-                    // After 1 second, allow the popover to be closed again
-                    new Timer().schedule(new TimerTask() {
-                        public void run() {
-                            // Check if the popover is still open, then allow closing
-                            if (popover.isOpened()) {
-                                // Do nothing if it's already open, just wait for the close action
+                getUI().ifPresent(ui -> ui.access(() ->
+                        new Timer().schedule(new TimerTask() {
+                            public void run() {
+                                // Do nothing; placeholder for potential future logic
                             }
-                        }
-                    }, 1000);  // Delay for 1 second (1000 milliseconds)
-                }));
+                        }, 1000)
+                ));
             } else {
-                // If the popover is already opened, close it when clicked again
                 popover.setOpened(false);
                 isOpened[0] = false;
             }
         });
 
-
         Icon notificationBell = new Icon(VaadinIcon.BELL);
         notificationBell.getElement().getStyle()
-                .set("color", "#fff")  // Make the bell white for contrast
-                .set("font-size", "24px");  // Adjust the size of the bell if needed
+                .set("color", "#fff")
+                .set("font-size", "24px");
 
-        // Create the search bar (TextField)
         TextField searchField = new TextField();
-        searchField.setPlaceholder("Search Semaino");  // Placeholder text
+        searchField.setPlaceholder("Search Semaino");
         searchField.addClassName("media-textfield");
-        searchField.getElement().getStyle().set("color", "#D7DADC");
-
-
-// Apply styles to the outer TextField container
         searchField.getElement().getStyle()
-                .set("background-color", "#6C7A89")  // Sky Blue for the outer container
-                .set("color", "#FFFFFF ")               // Text color inside the field (dark for contrast)
-                .set("border-radius", "20px")        // Rounded corners for the container
-                .set("width", "300px")               // Width of the search bar
-                .set("border", "none")               // Remove the default border
-                .set("padding", "0 15px")            // Padding inside the field
-                .set("font-size", "12px");           // Set font size to 14px (adjust as needed)
+                .set("background-color", "#6C7A89")
+                .set("color", "#FFFFFF")
+                .set("border-radius", "20px")
+                .set("width", "300px")
+                .set("border", "none")
+                .set("padding", "0 15px")
+                .set("font-size", "12px");
 
-// Apply styles to the inner input element to ensure it matches the outer container
         searchField.getElement().getChildren()
-                .filter(child -> child.getTag().equals("input"))  // Find the <input> element
+                .filter(child -> child.getTag().equals("input"))
                 .forEach(input -> input.getStyle()
-                        .set("background-color", "#FFFFFF   ")  // Sky Blue for the inner input field (to match the container)
-                        .set("border-radius", "20px")        // Rounded corners for the input field (to match container)
-                        .set("border", "none")               // Remove default border from the input field
-                        .set("color", "#FFFFFF ")               // Text color in the input (dark for contrast)
-                        .set("padding", "0 15px")            // Padding inside the input field
+                        .set("background-color", "#FFFFFF")
+                        .set("border-radius", "20px")
+                        .set("border", "none")
+                        .set("color", "#FFFFFF")
+                        .set("padding", "0 15px")
                 );
 
-
-        // Fancy "Communo" title
+        // You can add layout arrangements here as needed, like a top bar layout, etc.
+// Fancy "Communo" title (RouterLink navigates to Media view)
         RouterLink clickableTitle = new RouterLink("Semaino", Media.class);
         clickableTitle.getStyle()
                 .set("font-family", "'Segoe Script', cursive")
@@ -240,81 +220,80 @@ public class UserPage extends VerticalLayout {
                 .set("color", "#FFFFFF")
                 .set("text-decoration", "none")
                 .set("cursor", "pointer")
-                .setWidth("179px");
+                .set("width", "179px");
 
-
-// Add this `clickableTitle` to your layout instead of the Span directly
-
-        // Create root layout
+// Root horizontal layout for header bar
         HorizontalLayout rootLayout = new HorizontalLayout();
         rootLayout.setWidthFull();
         rootLayout.setPadding(false);
         rootLayout.setMargin(false);
 
-
-        // Apply baby blue background without affecting text color
+// Background color is dark (you said "baby blue" but color is #1a1a1b, which is dark)
+// Text color is white for the entire root
         rootLayout.getStyle()
                 .set("border-bottom", "1px solid #666")
-                .set("background-color", "#1a1a1b")  // Baby blue background
-                .set("color", "#ffffff");  // Text remains dark grey, unaffected by the background
+                .set("background-color", "#1a1a1b")  // Dark background color
+                .set("color", "#ffffff");             // White text color
 
-
-        // Sub-layouts for left, center, and right
+// Left layout with clickable title
         HorizontalLayout leftLayout = new HorizontalLayout(clickableTitle);
         leftLayout.setJustifyContentMode(JustifyContentMode.START);
         leftLayout.setWidthFull();
         leftLayout.getElement().getStyle().set("margin-left", "20px");
-        leftLayout.getStyle().set("color", "#333");  // Text color stays dark grey
+// Keep text white to match root, not dark gray (#333) which won't be visible
+        leftLayout.getStyle().set("color", "#ffffff");
 
+// Center layout with searchField (make sure searchField is defined)
         HorizontalLayout centerLayout = new HorizontalLayout(searchField);
         centerLayout.setJustifyContentMode(JustifyContentMode.CENTER);
         centerLayout.setAlignItems(Alignment.CENTER);
         centerLayout.setWidthFull();
-        centerLayout.getStyle().set("color", "#333");  // Text color stays dark grey
+        centerLayout.getStyle().set("color", "#ffffff");
 
+// Right layout with notification bell and avatar (make sure they are defined)
         HorizontalLayout rightLayout = new HorizontalLayout(notificationBell, userAvatar2);
         rightLayout.setJustifyContentMode(JustifyContentMode.END);
         rightLayout.setAlignItems(Alignment.CENTER);
         rightLayout.setWidthFull();
         rightLayout.getElement().getStyle().set("margin-right", "20px");
-        rightLayout.getStyle().set("color", "#333");  // Text color stays dark grey
+        rightLayout.getStyle().set("color", "#ffffff");
 
-        // Add all sub-layouts to root
+// Add sub-layouts to root layout
         rootLayout.add(leftLayout, centerLayout, rightLayout);
         rootLayout.setFlexGrow(1, leftLayout, centerLayout, rightLayout);
 
-        // Create the input card ONCE. This is the first element of the list.
-        Component inputCard = createPostInputCard();  // Create the input card for adding posts or replies.
-        inputCard.getElement().getStyle().set("width", "800px");  // Set the width of the input card to 800px.
-        inputCard.getElement().getStyle().set("margin-left", "auto");  // Center the card horizontally.
-        inputCard.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
-        inputCard.getElement().getStyle().set("margin-top", "15px");
+// Create the post input card once and style it centered
+        Component inputCard = createPostInputCard();
+        inputCard.getElement().getStyle()
+                .set("width", "800px")
+                .set("margin-left", "auto")
+                .set("margin-right", "auto")
+                .set("margin-top", "15px");
 
-        // === Sort Button (Trigger) ===
+// Sort button and wrapper
         sortButton = new Button("New");
         sortButton.addClassName("glow-hover");
         sortButton.getStyle()
                 .set("margin", "0")
                 .set("padding", "0")
                 .set("height", "20px")
-                .set("color", "#686b6e") // Set text color
-                .set("font-size", "13px");       // Make text smaller (half of typical 20px)
+                .set("color", "#686b6e")
+                .set("font-size", "13px");
 
         Div sortButtonWrapper = new Div();
         sortButtonWrapper.addClassName("elliptical-glow-wrapper");
-
-// Add the sortButton inside the wrapper
         sortButtonWrapper.add(sortButton);
-// === Popover Setup ===
+
+// Popover setup
         Popover sortPopoverPopup = new Popover();
         sortPopoverPopup.addClassName("glow-hover");
-        sortPopoverPopup.setTarget(sortButton); // This is the trigger
+        sortPopoverPopup.setTarget(sortButton);
         sortPopoverPopup.setPosition(PopoverPosition.BOTTOM);
         sortPopoverPopup.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
 
-// === Popover Content ===
+// Popover content
         VerticalLayout sortPopoverContent = new VerticalLayout();
-        sortPopoverContent.setWidthFull(); // Ensure popup content fills available width
+        sortPopoverContent.setWidthFull();
         sortPopoverContent.setPadding(false);
         sortPopoverContent.setSpacing(false);
         sortPopoverContent.getStyle()
@@ -322,8 +301,7 @@ public class UserPage extends VerticalLayout {
                 .set("color", "#ffffff")
                 .set("min-width", "120px")
                 .set("text-align", "left")
-                .set("border-radius", "8px");  // 👈 Rounded corners
-
+                .set("border-radius", "8px");
 
         Div sortHeader = new Div();
         sortHeader.setText("Sort by:");
@@ -331,30 +309,24 @@ public class UserPage extends VerticalLayout {
                 .set("font-weight", "bold")
                 .set("color", "#686b6e")
                 .set("text-align", "center")
-                .set("width", "100%"); // Ensure it spans enough space to allow centering
+                .set("width", "100%");
 
-// === Sort Options ===
         sortNewButton = new Button("New");
-        sortNewButton.setWidthFull(); // Ensures the button spans full width
+        sortNewButton.setWidthFull();
         sortNewButton.addClassName("popup-hover-item");
-        sortNewButton.getStyle().set("width", "100%")
-                .set("color", "#D7DADC");
-
+        sortNewButton.getStyle().set("color", "#D7DADC");
 
         sortTopButton = new Button("Top");
         sortTopButton.setWidthFull();
         sortTopButton.addClassName("popup-hover-item");
-        sortTopButton.getStyle().set("width", "100%")
-                .set("color", "#D7DADC");
+        sortTopButton.getStyle().set("color", "#D7DADC");
 
-// === Assemble Popover ===
         sortPopoverContent.add(sortHeader, sortNewButton, sortTopButton);
         sortPopoverPopup.add(sortPopoverContent);
 
-// === Track Popover Open State ===
         boolean[] isSortPopoverOpen = {false};
 
-// === Toggle with Delay to Prevent Vaadin Sync Issues ===
+// Toggle popover with a delay to prevent UI sync issues
         sortButton.getElement().addEventListener("click", e -> {
             if (!isSortPopoverOpen[0]) {
                 new Timer().schedule(new TimerTask() {
@@ -365,14 +337,14 @@ public class UserPage extends VerticalLayout {
                             isSortPopoverOpen[0] = true;
                         }));
                     }
-                }, 100); // 100ms delay
+                }, 100);
             } else {
                 sortPopoverPopup.setOpened(false);
                 isSortPopoverOpen[0] = false;
             }
         });
 
-// === Button Logic ===
+// Sort button click listeners
         sortNewButton.addClickListener(e -> {
             sortMode = 0;
             loadPosts();
@@ -380,7 +352,6 @@ public class UserPage extends VerticalLayout {
             sortPopoverPopup.setOpened(false);
             isSortPopoverOpen[0] = false;
         });
-
         sortTopButton.addClickListener(e -> {
             sortMode = 1;
             loadPosts();
@@ -390,76 +361,72 @@ public class UserPage extends VerticalLayout {
         });
         updateSortButtonHighlight();
 
-
-// Create the horizontal layout wrapper and center the button
+// Middle bar holds the sort button wrapper and centers it
         middleBar = new HorizontalLayout(sortButtonWrapper);
-        middleBar.setWidth("800px"); // Fixed width
+        middleBar.setWidth("800px");
         middleBar.setHeight("20px");
-        middleBar.getElement().getStyle().set("margin-left", "auto");  // Center the card horizontally.
-        middleBar.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
-        middleBar.getElement().getStyle().set("margin-top", "10px");  // Center the card horizontally.
-        middleBar.setJustifyContentMode(FlexComponent.JustifyContentMode.START); // Center the button
+        middleBar.getElement().getStyle()
+                .set("margin-left", "auto")
+                .set("margin-right", "auto")
+                .set("margin-top", "10px");
+        middleBar.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
         middleBar.setPadding(false);
         middleBar.getStyle()
-                .set("background-color", "#1a1a1b"); // Optional: match card background
+                .set("background-color", "#1a1a1b");
 
-        // Virtual List of posts
+// Virtual list of posts (mixed Components and Posts)
         postList = new VirtualList<>();
-        postList.getElement().getStyle().set("scrollbar-gutter", "stable both-edges");  // Ensures the scrollbar appears on both edges.
         postList.getElement().getStyle()
+                .set("scrollbar-gutter", "stable both-edges")
                 .set("padding", "0")
-                .set("margin", "0");
-        // Create list: first the post input card, then the posts
-        List<Object> items = new ArrayList<>();  // Create a list to store the input card and posts.
-        items.add(middleBar); // Middle bar with button
-        items.add(inputCard);  // Add the input card to the list.
+                .set("margin", "0")
+                .set("overflow", "hidden");
+
+// Items: middleBar, inputCard, then posts
+        List<Object> items = new ArrayList<>();
+        items.add(middleBar);
+        items.add(inputCard);
         items.addAll(UserPost.readPostsForUser(username));
+        postList.setItems(items);
 
-        postList.setItems(items);  // Set the list of items (input card + posts) to the VirtualList.
-        postList.getElement().getStyle().set("overflow", "hidden");
-
-
-        postList.setRenderer(new ComponentRenderer<>(item -> {  // Define how each item should be rendered in the list.
+// Renderer for posts and components
+        postList.setRenderer(new ComponentRenderer<>(item -> {
             if (item instanceof Component) {
-                return (Component) item;  // If the item is the input card, return it as a component.
-            } else if (item instanceof Post post) {  // If the item is a post, render it as a post card.
-                Component card;
-                if (post.getParentId().equals("0")) {  // If the post is a top-level comment (not a reply).
-                    card = createCommentCard(post);  // Create a comment card.
-                } else {
-                    card = createReplyCard(post);  // Otherwise, create a reply card.
-                }
-                // Set styles for the card (no background color interference).
-                card.getElement().getStyle().set("margin", "0 auto");
-                card.getElement().getStyle().set("width", "800px");
-                card.getElement().getStyle().set("margin-top", "10px");
+                return (Component) item;
+            } else if (item instanceof Post post) {
+                Component card = post.getParentId().equals("0")
+                        ? createCommentCard(post)
+                        : createReplyCard(post);
+                card.getElement().getStyle()
+                        .set("margin", "0 auto")
+                        .set("width", "800px")
+                        .set("margin-top", "10px");
                 return card;
             } else {
-                return new Span("Unknown item");  // Default message if item is unknown.
+                return new Span("Unknown item");
             }
         }));
 
-        postList.setWidthFull();  // Make the list take up full width.
-        postList.setHeightFull();  // Make the list take up full height.
+        postList.setWidthFull();
+        postList.setHeightFull();
 
-        // Wrapper layout for holding the content
-        VerticalLayout content = new VerticalLayout();  // A container to hold the post list.
-        content.setWidthFull();  // Make the container take up full width.
-        content.setHeight("100%");  // Make the container take up the remaining height (95%).
-        content.setPadding(false);  // Remove padding from the container.
-        content.setSpacing(true);  // Add spacing between components inside the container.
-        content.setDefaultHorizontalComponentAlignment(Alignment.CENTER);  // Center-align the components horizontally.
+// Content container holding postList
+        VerticalLayout content = new VerticalLayout();
+        content.setWidthFull();
+        content.setHeight("100%");
+        content.setPadding(false);
+        content.setSpacing(true);
+        content.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
+        content.add(postList);
+        content.setFlexGrow(1, postList);
 
-
-        content.add(postList);  // Add the post list to the content layout.
-        content.setFlexGrow(1, postList);  // Make the post list grow to fill available space.
-
+// Main layout holds sidebar, content, and filler
         HorizontalLayout layout = new HorizontalLayout();
         layout.setSizeFull();
         layout.setAlignItems(Alignment.CENTER);
-        layout.getStyle().set("position", "relative"); // Make it a positioning context
+        layout.getStyle().set("position", "relative");
 
-// ===== Sidebar (Overlay) =====
+// Sidebar overlay on the left
         VerticalLayout sideBar = new VerticalLayout();
         sideBar.setHeightFull();
         sideBar.setWidth("200px");
@@ -471,7 +438,7 @@ public class UserPage extends VerticalLayout {
                 .set("background-color", "#1a1a1b")
                 .set("color", "#FFFFFF");
 
-// Icons and Labels
+// Sidebar menu items
         Icon homeIcon = VaadinIcon.BUILDING.create();
         Span homeText = new Span("Home");
         HorizontalLayout homeLayout = new HorizontalLayout(homeIcon, homeText);
@@ -488,48 +455,43 @@ public class UserPage extends VerticalLayout {
         Span allText = new Span("All");
         HorizontalLayout allLayout = new HorizontalLayout(allIcon, allText);
 
-// Add all to sidebar
         sideBar.add(homeLayout, popularLayout, forYouLayout, allLayout);
 
-// ===== Filler (Overlay) =====
-// Create the filler layout
+// Filler overlay on the right
         VerticalLayout filler = new VerticalLayout();
         filler.setHeightFull();
         filler.setWidth("200px");
         filler.setAlignItems(Alignment.END);
-
         filler.getStyle()
                 .set("bottom", "0")
                 .set("right", "0")
                 .set("background-color", "#1a1a1b")
                 .set("border-left", "1px solid #444");
 
-        List<String> subscriptions = new ArrayList<>(); // or get real subscriptions list
-
-        User user = User.loadFromFile(username);
+// Prepare user card data (followers list must be defined)
+        User user = selectedUser; // reuse the already loaded one
 
         VerticalLayout userCard;
         if (user != null) {
-            int likes = user.getLikeCount();
-            int posts = user.getPostCount();
-            // get followers and subscriptions however you do here
-            userCard = createUserCard(username, likes, followers, subscriptions);
+            System.out.println("Followers: " + followers);
+            System.out.println("Subscriptions: " + subscriptions);
+            userCard = createUserCard(username, user.getLikeCount(), followers, subscriptions);
         } else {
-            // fallback if user file missing
-            userCard = createUserCard(username, 0, 0, new ArrayList<>());
+            userCard = createUserCard(username, 0, new ArrayList<>(), new ArrayList<>());
         }
 
         filler.add(userCard);
 
 
 
-// ===== Content =====
-        layout.add(sideBar, content, filler); // Only content is part of layout flow
-        layout.setFlexGrow(1, content);       // Only content should grow
+// Add sidebar, content, and filler to main layout
+        layout.add(sideBar, content, filler);
+        layout.setFlexGrow(1, content); // Only content expands
 
-// Add overlays after layout
+// Add the header and main layout to the view
         add(rootLayout, layout);
     }
+
 
     private String getAvatarFilenameForUser(String username) {
         Path avatarDir = Paths.get("users", username, "Avatar");
@@ -546,14 +508,12 @@ public class UserPage extends VerticalLayout {
                 e.printStackTrace();
             }
         }
-
         return "default.png"; // fallback if folder missing or error
     }
 
-    public VerticalLayout createUserCard(String username, int likes, int followers, List<String> subscriptions) {
+    public VerticalLayout createUserCard(String username, int likes, List<String> followers, List<String> subscriptions) {
         VerticalLayout userCardLayout = new VerticalLayout();
         userCardLayout.addClassName("hover-card");
-
         userCardLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         userCardLayout.setSpacing(false);
         userCardLayout.setPadding(true);
@@ -564,14 +524,14 @@ public class UserPage extends VerticalLayout {
                 .set("margin", "0")
                 .set("background-color", "#1a1a1b")
                 .set("color", "#ffffff");
-
-        userCardLayout.setWidthFull(); // Use full width of parent container
+        userCardLayout.setWidthFull();
 
         // Avatar
         Avatar avatar = new Avatar();
-        avatar.setImage("/avatar/" + username + "/" + getAvatarFilenameForUser(username));
+        String avatarFileName = getAvatarFilenameForUser(username);
+        avatar.setImage("/avatar/" + username + "/" + avatarFileName);
         avatar.setWidth("50%");
-        avatar.setHeight("auto"); // maintain aspect ratio
+        avatar.setHeight("auto");
         avatar.getStyle()
                 .set("background-color", "white")
                 .set("border", "1px solid #ffffff");
@@ -582,8 +542,96 @@ public class UserPage extends VerticalLayout {
         name.getStyle().set("font-weight", "bold").set("font-size", "1rem");
         userCardLayout.add(name);
 
-        // Divider
-        userCardLayout.add(new Hr());
+        // --- VirtualLists BEFORE the follow button ---
+        VirtualList<String> followsList = new VirtualList<>();
+        followsList.setItems(subscriptions);
+        followsList.setRenderer(new ComponentRenderer<>(followedUser -> {
+            Span userSpan = new Span(followedUser);
+            userSpan.getStyle()
+                    .set("color", "#ffffff")
+                    .set("background-color", "#1a1a1b")
+                    .set("padding", "6px 10px")
+                    .set("border-radius", "4px")
+                    .set("display", "block");
+            return userSpan;
+        }));
+
+        VirtualList<String> followedByList = new VirtualList<>();
+        followedByList.setItems(followers);
+        followedByList.setRenderer(new ComponentRenderer<>(follower -> {
+            Span userSpan = new Span(follower);
+            userSpan.getStyle()
+                    .set("color", "#ffffff")
+                    .set("background-color", "#1a1a1b")
+                    .set("padding", "6px 10px")
+                    .set("border-radius", "4px")
+                    .set("display", "block");
+            return userSpan;
+        }));
+
+        // FOLLOW BUTTON
+        Button followButton = new Button("Follow");
+        followButton.getStyle()
+                .set("background-color", "#3a3a3c")
+                .set("color", "#ffffff")
+                .set("border", "1px solid #555")
+                .set("border-radius", "5px")
+                .set("margin-top", "5px")
+                .set("margin-bottom", "10px");
+
+        followButton.addClickListener(click -> {
+            try {
+                String currentUsername = Files.readString(Paths.get("loggedinuser.txt")).trim();
+
+                if (currentUsername.equals(username)) {
+                    Notification.show("You can't follow yourself.", 3000, Notification.Position.TOP_CENTER);
+                    return;
+                }
+
+                Path basePath = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users");
+
+                Path currentUserFollowingDir = basePath.resolve(currentUsername).resolve("Follow").resolve("Following");
+                Path targetUserFollowedByDir = basePath.resolve(username).resolve("Follow").resolve("FollowedBy");
+
+                Files.createDirectories(currentUserFollowingDir);
+                Files.createDirectories(targetUserFollowedByDir);
+
+                Path followingFile = currentUserFollowingDir.resolve(username + ".txt");
+                Path followedByFile = targetUserFollowedByDir.resolve(currentUsername + ".txt");
+
+                boolean updated = false;
+
+                if (!Files.exists(followingFile)) {
+                    Files.writeString(followingFile, username, StandardCharsets.UTF_8);
+                    subscriptions.add(username);
+                    followsList.getDataProvider().refreshAll();
+                    updated = true;
+                }
+
+                if (!Files.exists(followedByFile)) {
+                    Files.writeString(followedByFile, currentUsername, StandardCharsets.UTF_8);
+                    followers.add(currentUsername);
+                    followedByList.getDataProvider().refreshAll();
+                    updated = true;
+                }
+
+                if (updated) {
+                    Notification notification = new Notification("Now following " + username, 3000, Notification.Position.TOP_CENTER);
+                    notification.getElement().getStyle()
+                            .set("background-color", "#1a1a1b")
+                            .set("color", "#ffffff")
+                            .set("border", "1px solid #00ff99")
+                            .set("border-radius", "8px");
+                    notification.open();
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                Notification.show("Failed to follow user.", 3000, Notification.Position.TOP_CENTER);
+            }
+        });
+
+        userCardLayout.add(followButton);
 
         // Status Section
         Span statusLabel = new Span("Status:");
@@ -598,6 +646,16 @@ public class UserPage extends VerticalLayout {
                 .set("border", "1px solid #555")
                 .set("border-radius", "5px");
 
+        Path statusFile = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Status.txt");
+        if (Files.exists(statusFile)) {
+            try {
+                String existingStatus = Files.readString(statusFile, StandardCharsets.UTF_8);
+                statusArea.setValue(existingStatus);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         Button saveButton = new Button("Save");
         saveButton.getStyle()
                 .set("background-color", "#3a3a3c")
@@ -606,38 +664,21 @@ public class UserPage extends VerticalLayout {
 
         saveButton.addClickListener(event -> {
             String statusText = statusArea.getValue();
-
-            Path usersDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users");
-            Path userDir = usersDir.resolve(username);
-
+            Path userDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username);
             try {
-                if (!Files.exists(usersDir)) {
-                    Files.createDirectory(usersDir);
-                }
-
-                if (!Files.exists(userDir)) {
-                    Files.createDirectory(userDir);
-                }
-
-                Path statusFile = userDir.resolve("Status.txt");
-
-                if (!Files.exists(statusFile)) {
-                    Files.createFile(statusFile);
-                }
-
-                Files.writeString(statusFile, statusText, StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING);
+                Files.createDirectories(userDir);
+                Files.writeString(userDir.resolve("Status.txt"), statusText, StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
                 Notification notification = new Notification();
                 notification.setDuration(3000);
                 notification.setPosition(Notification.Position.TOP_CENTER);
-
                 Span message = new Span("Status saved successfully!");
                 message.getStyle()
-                        .set("color", "#FF4500")          // Reddit orange
+                        .set("color", "#FF4500")
                         .set("font-weight", "bold");
 
                 notification.add(message);
-
                 notification.getElement().getStyle()
                         .set("background-color", "#1a1a1b")
                         .set("border", "1px solid #FF4500")
@@ -651,185 +692,172 @@ public class UserPage extends VerticalLayout {
             }
         });
 
-
         VerticalLayout statusLayout = new VerticalLayout(statusLabel, statusArea, saveButton);
         statusLayout.setPadding(false);
         statusLayout.setSpacing(false);
         statusLayout.setWidthFull();
         userCardLayout.add(statusLayout);
 
-        // Divider
         userCardLayout.add(new Hr());
 
-        // Likes & Followers
+        // Likes
         Span likesSpan = new Span("Likes: " + likes);
-        Span followersSpan = new Span("Followers: " + followers);
         likesSpan.getStyle().set("font-size", "0.9rem");
-        followersSpan.getStyle().set("font-size", "0.9rem");
-        userCardLayout.add(likesSpan, followersSpan);
+        userCardLayout.add(likesSpan);
 
-        // Divider
         userCardLayout.add(new Hr());
 
-// Subscriptions
-        Span subHeader = new Span("Subscribed to:");
-        subHeader.getStyle().set("font-weight", "bold").set("font-size", "1rem");
-        userCardLayout.add(subHeader);
+        // Follows
+        Span followsLabel = new Span("Follows:");
+        followsLabel.getStyle().set("font-weight", "bold").set("font-size", "1rem");
+        userCardLayout.add(followsLabel);
 
-// Placeholder Divs for each subscription
-        for (int i = 0; i < subscriptions.size(); i++) {
-            Div subscriptionDiv = new Div();
-            subscriptionDiv.setWidthFull(); // Use 100% of the card width
-            subscriptionDiv.getStyle()
-                    .set("min-height", "20px") // Gives the div some visible space even if empty
-                    .set("background-color", "#2a2a2b") // Optional: distinguish visually
-                    .set("border-radius", "4px")
-                    .set("margin-top", "5px");
-            // No content yet - will be filled later when the feature exists
-            userCardLayout.add(subscriptionDiv);
-        }
+        followsList.setHeight("120px");
+        followsList.getStyle()
+                .set("background-color", "#1a1a1b")
+                .set("padding", "10px")
+                .set("border-radius", "5px");
+        userCardLayout.add(followsList);
+
+        userCardLayout.add(new Hr());
+
+        // Followed By
+        Span followedByLabel = new Span("Followed By:");
+        followedByLabel.getStyle().set("font-weight", "bold").set("font-size", "1rem");
+        userCardLayout.add(followedByLabel);
+
+        followedByList.setHeight("120px");
+        followedByList.getStyle()
+                .set("background-color", "#1a1a1b")
+                .set("padding", "10px")
+                .set("border-radius", "5px");
+        userCardLayout.add(followedByList);
 
         return userCardLayout;
     }
 
 
-    // Define the Comment Card
+    // Create a card layout for a top-level comment post
     public VerticalLayout createCommentCard(Post postData) {
-        // Create the container for the card layout
         VerticalLayout commentCardLayout = new VerticalLayout();
         commentCardLayout.addClassName("hover-card");
-
         commentCardLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         commentCardLayout.setSpacing(true);
         commentCardLayout.setPadding(true);
+        commentCardLayout.setWidth("800px");
         commentCardLayout.getStyle()
                 .set("border", "1px solid #ccc")
-                .set("border-radius", "10px")  // ✅ add smooth edges
+                .set("border-radius", "10px")
                 .set("padding", "10px")
                 .set("margin", "0")
-                .set("background-color", "#1a1a1b")  // Dark background
-                .set("color", "#ffffff");  // White text
+                .set("background-color", "#1a1a1b")
+                .set("color", "#ffffff");
 
-        commentCardLayout.setWidth("800px");
-
-        // Top: Avatar + User Name + Posted on: Date
+        // Top row: avatar + username + post time
         HorizontalLayout topRow = new HorizontalLayout();
-        // Get the username from post data
         String username = postData.getUserName();
-
-// Get the avatar image URL for this user (implement this method based on your setup)
         String avatarUrl = "/avatar/" + username + "/" + getAvatarFilenameForUser(username);
-
-// Create avatar without initials but with the user image
         Avatar userAvatar = new Avatar();
-        userAvatar.setImage(avatarUrl);  // Set the user's uploaded image
-
-// Style the avatar (white background, black border)
+        userAvatar.setImage(avatarUrl);
         userAvatar.getStyle()
                 .set("background-color", "white")
                 .set("border", "1px solid #ffffff");
 
-// Username label with white text
         Span userName = new Span(username);
         userName.getStyle().set("color", "#ffffff");
 
-// Post time label with white text
         Span commentTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
         commentTime.getStyle().set("color", "#ffffff");
 
-// Add components to the horizontal layout row
         topRow.add(userAvatar, userName, commentTime);
         topRow.setWidthFull();
         topRow.setJustifyContentMode(JustifyContentMode.START);
         topRow.setAlignItems(Alignment.CENTER);
 
-
-        // Comment content (Textfield for the comment)
+        // Comment content text
         Div commentContent = new Div();
-        commentContent.setWidthFull(); // Make the row take full width
-
-        commentContent.getStyle().set("text-align", "left");
+        commentContent.setWidthFull();
         commentContent.getStyle()
+                .set("text-align", "left")
                 .set("white-space", "pre-wrap")
                 .set("overflow-wrap", "break-word")
                 .set("word-break", "break-word")
                 .set("max-width", "750px")
-                .set("color", "#ffffff");  // White text
+                .set("color", "#ffffff");
         commentContent.setText(postData.getPostContent());
 
-        // Display number of likes
+        // Likes row
         HorizontalLayout likesRow = new HorizontalLayout();
         likesRow.setJustifyContentMode(JustifyContentMode.BETWEEN);
         likesRow.setAlignItems(Alignment.CENTER);
-        likesRow.getStyle()
-                .set("width", "725px"); // ✅ 700px for comment card
+        likesRow.getStyle().set("width", "725px");
 
-        // Likes count
-        Span likesCount = new Span("Liked: " + postData.getLikes());
+        Span likesCount = new Span("Likes: " + postData.getLikes());
         likesCount.getStyle()
                 .set("font-size", "14px")
-                .set("color", "#ffffff")  // White text
+                .set("color", "#ffffff")
                 .set("white-space", "nowrap");
 
-        // Like button avatar
         LikeButton likeButton = new LikeButton(postData);
         likeButton.getStyle()
-                .set("background-color", "white")  // Avoid dark background affecting the avatar
-                .set("color", "black")  // Ensure the text/initials stay white
-                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
+                .set("background-color", "white")
+                .set("color", "black")
+                .set("border", "1px solid #ffffff");
+
         likesRow.add(likesCount, likeButton);
 
-        // Add everything to the layout
+        // Add components to the comment card
         commentCardLayout.add(topRow, commentContent, likesRow);
 
+        // Add reply input section below the comment card
         UserPost userPostInstance = new UserPost();
         commentCardLayout.add(userPostInstance.createReplyInputSection(postData));
 
         return commentCardLayout;
     }
 
-    // Define the Reply Card
+    // Create a card layout for a reply post (child post)
     public VerticalLayout createReplyCard(Post postData) {
-        // Reply card layout container
         VerticalLayout replyCardLayout = new VerticalLayout();
         replyCardLayout.addClassName("hover-card");
-
         replyCardLayout.setAlignItems(Alignment.START);
         replyCardLayout.setSpacing(true);
         replyCardLayout.setPadding(true);
         replyCardLayout.setWidth("800px");
         replyCardLayout.getStyle()
                 .set("border", "1px solid #ccc")
-                .set("border-radius", "10px")  // ✅ add smooth edges
+                .set("border-radius", "10px")
                 .set("padding", "10px")
-                .set("background-color", "#1a1a1b")  // Dark background
-                .set("color", "#ffffff");  // White text
+                .set("background-color", "#1a1a1b")
+                .set("color", "#ffffff");
 
         Post parentPost = UserPost.findPostById(postData.getParentId());
 
-        // 🔝 Parent post info
+        // Parent post info at the top of reply card
         HorizontalLayout topRow = new HorizontalLayout();
-        String originalUsername = parentPost != null ? parentPost.getUserName() : "Unknown";
-        String avatarFilename = getAvatarFilenameForUser(originalUsername); // Same helper method
+        String originalUsername = (parentPost != null) ? parentPost.getUserName() : "Unknown";
+        String avatarFilename = getAvatarFilenameForUser(originalUsername);
         String avatarUrl = "/avatar/" + originalUsername + "/" + avatarFilename;
 
         Avatar originalAvatar = new Avatar();
-        originalAvatar.setImage(avatarUrl);  // Show the uploaded image
-
+        originalAvatar.setImage(avatarUrl);
         originalAvatar.getStyle()
                 .set("background-color", "white")
                 .set("border", "1px solid #ffffff");
 
-        Span originalPoster = new Span(parentPost != null ? parentPost.getUserName() : "Unknown");
-        originalPoster.getStyle().set("color", "#ffffff");  // White text
-        Span originalTime = new Span("Posted on: " + Post.formatTimestamp(parentPost != null ? parentPost.getTimestamp() : postData.getTimestamp()));
-        originalTime.getStyle().set("color", "#ffffff");  // White text
+        Span originalPoster = new Span(originalUsername);
+        originalPoster.getStyle().set("color", "#ffffff");
+
+        Span originalTime = new Span("Posted on: " +
+                Post.formatTimestamp((parentPost != null) ? parentPost.getTimestamp() : postData.getTimestamp()));
+        originalTime.getStyle().set("color", "#ffffff");
+
         topRow.add(originalAvatar, originalPoster, originalTime);
         topRow.setWidthFull();
         topRow.setJustifyContentMode(JustifyContentMode.START);
         topRow.setAlignItems(Alignment.CENTER);
 
-        // 💬 Parent post content
+        // Parent post content display
         Div originalPostContent = new Div();
         originalPostContent.getStyle()
                 .set("white-space", "pre-wrap")
@@ -840,20 +868,20 @@ public class UserPage extends VerticalLayout {
                 .set("border-radius", "5px")
                 .set("padding", "10px")
                 .set("margin-bottom", "10px")
-                .set("color", "#ffffff");  // White text
-        originalPostContent.setText(parentPost != null ? parentPost.getPostContent() : "Original post not found");
+                .set("color", "#ffffff");
+        originalPostContent.setText((parentPost != null) ? parentPost.getPostContent() : "Original post not found");
 
-        // ❤️ Likes row for parent post
+        // Parent post likes row
         HorizontalLayout parentLikesRow = new HorizontalLayout();
         if (parentPost != null) {
             parentLikesRow.setWidth("750px");
             parentLikesRow.setJustifyContentMode(JustifyContentMode.BETWEEN);
             parentLikesRow.setAlignItems(Alignment.CENTER);
 
-            Span parentLikesCount = new Span("Liked: " + parentPost.getLikes());
+            Span parentLikesCount = new Span("Likes: " + parentPost.getLikes());
             parentLikesCount.getStyle()
                     .set("font-size", "14px")
-                    .set("color", "#ffffff")  // White text
+                    .set("color", "#ffffff")
                     .set("white-space", "nowrap");
 
             HorizontalLayout parentLikeButtonWrapper = new HorizontalLayout();
@@ -864,24 +892,25 @@ public class UserPage extends VerticalLayout {
             parentLikesRow.add(parentLikesCount, parentLikeButtonWrapper);
         }
 
-        // 🧱 Add parent post section
+        // Add parent post info to the reply card
         replyCardLayout.add(topRow, originalPostContent);
-        if (parentPost != null) replyCardLayout.add(parentLikesRow);
+        if (parentPost != null) {
+            replyCardLayout.add(parentLikesRow);
+        }
 
-        // 🔽 Reply input section to reply to the *parent*
+        // Reply input section to reply to the parent post
         if (parentPost != null) {
             replyCardLayout.add(new UserPost().createReplyInputSection(parentPost));
         }
 
-        // 🔁 Reply meta info
+        // Reply meta info: avatar, username, timestamp of the reply itself
         HorizontalLayout replyMeta = new HorizontalLayout();
-
         String replyUsername = postData.getUserName();
         String replyAvatarFilename = getAvatarFilenameForUser(replyUsername);
         String replyAvatarUrl = "/avatar/" + replyUsername + "/" + replyAvatarFilename;
 
         Avatar replyAvatar = new Avatar();
-        replyAvatar.setImage(replyAvatarUrl);  // ✅ Correctly use the reply user's image
+        replyAvatar.setImage(replyAvatarUrl);
         replyAvatar.getStyle()
                 .set("background-color", "white")
                 .set("border", "1px solid #ffffff");
@@ -898,7 +927,7 @@ public class UserPage extends VerticalLayout {
         replyMeta.setAlignItems(Alignment.CENTER);
         replyMeta.getStyle().set("margin-left", "50px");
 
-        // 📝 Reply content
+        // Reply content display
         Div replyContent = new Div();
         replyContent.getStyle()
                 .set("white-space", "pre-wrap")
@@ -906,19 +935,19 @@ public class UserPage extends VerticalLayout {
                 .set("word-break", "break-word")
                 .set("max-width", "750px")
                 .set("margin-left", "50px")
-                .set("color", "#ffffff");  // White text
+                .set("color", "#ffffff");
         replyContent.setText(postData.getPostContent());
 
-        // 👍 Likes row for reply post
+        // Likes row for reply post
         HorizontalLayout likesRow = new HorizontalLayout();
         likesRow.setWidth("700px");
         likesRow.setAlignItems(Alignment.CENTER);
         likesRow.getStyle().set("margin-left", "50px");
 
-        Span likesCount = new Span("Liked: " + postData.getLikes());
+        Span likesCount = new Span("Likes: " + postData.getLikes());
         likesCount.getStyle()
                 .set("font-size", "14px")
-                .set("color", "#ffffff")  // White text
+                .set("color", "#ffffff")
                 .set("white-space", "nowrap");
 
         HorizontalLayout buttonWrapper = new HorizontalLayout();
@@ -928,15 +957,14 @@ public class UserPage extends VerticalLayout {
 
         likesRow.add(likesCount, buttonWrapper);
 
-        // Add the reply content
+        // Add reply meta, content, and likes row to reply card
         replyCardLayout.add(replyMeta, replyContent, likesRow);
 
-        // 🔽 Reply input section to reply to this *reply*
+        // Reply input section to reply to this reply
         replyCardLayout.add(new UserPost().createReplyInputSection(postData));
 
         return replyCardLayout;
     }
-
 
 
     private Component createPostInputCard() {
@@ -1071,6 +1099,29 @@ public class UserPage extends VerticalLayout {
             sortTopButton.addClassName("popup-hover-item-active");
         }
     }
+    private void loadUserProfile(String username) {
+        // Your logic to load and display user data from
+        // C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben2/users/<username>
+        // For example:
+        add(new Span("User profile for: " + username));
+    }
+    private List<String> loadList(String username, String listName) throws IOException {
+        Path dir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users",
+                username, "Follow", listName);
+        if (!Files.exists(dir)) return Collections.emptyList();
+        try (Stream<Path> files = Files.list(dir)) {
+            return files
+                    .filter(Files::isRegularFile)
+                    .map(p -> p.getFileName().toString().replace(".txt", ""))
+                    .collect(Collectors.toList());
+        }
+    }
 
+    private List<String> loadSubscribers(String username) throws IOException {
+        return loadList(username, "Following");
+    }
+    private List<String> loadFollowers(String username) throws IOException {
+        return loadList(username, "FollowedBy");
+    }
 
 }

@@ -1,6 +1,7 @@
 package org.vaadin.example.social;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
@@ -60,8 +61,8 @@ public class Media extends VerticalLayout {
 
         VerticalLayout popoverContent = new VerticalLayout();
         popoverContent.getStyle().set("background-color", "#282b30")  // Apply the color you need
-                                 .set("border-radius", "16px")  // Adjust the value as needed to round the corners
-                                 .set("overflow", "hidden"); // This clips the content to the rounded corners
+                .set("border-radius", "16px")  // Adjust the value as needed to round the corners
+                .set("overflow", "hidden"); // This clips the content to the rounded corners
 
 
         // Get the avatar image URL for this user
@@ -76,25 +77,33 @@ public class Media extends VerticalLayout {
                 .set("border", "1px solid black");
 
 
-// Wrap avatar in RouterLink
+// Wrap avatar in RouterLink (optional, can keep this if you want avatar clickable)
         RouterLink avatarLink = new RouterLink();
-        avatarLink.setRoute(UserPage.class); // replace with actual class
+        avatarLink.setRoute(UserPage.class);
         avatarLink.add(userAvatar2);
-
-// Optional: remove link styling
         avatarLink.getStyle().set("text-decoration", "none");
-        RouterLink userpageLink = new RouterLink();
-        userpageLink.setText("View Profile");
-        userpageLink.setRoute(UserPage.class); // Replace with your actual target view class
+
+// Instead of RouterLink for "View Profile", use a clickable Span
+        Span userpageLink = new Span("View Profile");
         userpageLink.getStyle()
                 .set("font-weight", "bold")
                 .set("font-size", "14px")
                 .set("color", "white")
-                .set("text-decoration", "none"); // optional: remove underline
+                .set("text-decoration", "none")
+                .set("cursor", "pointer");
 
+// Add click listener that writes username and navigates
+        userpageLink.getElement().addEventListener("click", event -> {
+            try {
+                Files.writeString(Paths.get("selecteduser.txt"), username);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            UI.getCurrent().navigate(UserPage.class);
+        });
 
         Div usernameDiv = new Div();
-        usernameDiv.setText(username); // Use the logged-in username
+        usernameDiv.setText(username); // Use the username of the profile shown
         usernameDiv.getStyle()
                 .set("font-size", "13px")
                 .set("color", "#7e8f96");
@@ -105,8 +114,8 @@ public class Media extends VerticalLayout {
         userInfoLayout.setMargin(false);
 
         HorizontalLayout userRow = new HorizontalLayout(userInfoLayout);
-        userRow.setAlignItems(FlexComponent.Alignment.CENTER);  // Center vertically
-        userRow.setSpacing(true);  // Add some space between Avatar and the user info
+        userRow.setAlignItems(FlexComponent.Alignment.CENTER);
+        userRow.setSpacing(true);
 
 // === Add the Second Avatar to a Different Layout or Row ===
 
@@ -131,7 +140,7 @@ public class Media extends VerticalLayout {
             getUI().ifPresent(ui -> ui.navigate("avatarselection"));
         });
         avatarCreatingButton.getStyle().set("color", "white")
-                                        .set("font-size", "14px");
+                .set("font-size", "14px");
 // Set text color to white
         popoverContent.add(secondAvatarLayout, avatarCreatingButton, logoutButton);
 
@@ -320,14 +329,14 @@ public class Media extends VerticalLayout {
         sortNewButton.setWidthFull(); // Ensures the button spans full width
         sortNewButton.addClassName("popup-hover-item");
         sortNewButton.getStyle().set("width", "100%")
-                                .set("color", "#D7DADC");
+                .set("color", "#D7DADC");
 
 
         sortTopButton = new Button("Top");
         sortTopButton.setWidthFull();
         sortTopButton.addClassName("popup-hover-item");
         sortTopButton.getStyle().set("width", "100%")
-                                .set("color", "#D7DADC");
+                .set("color", "#D7DADC");
 
 // === Assemble Popover ===
         sortPopoverContent.add(sortHeader, sortNewButton, sortTopButton);
@@ -551,7 +560,32 @@ public class Media extends VerticalLayout {
 
 // Username label with white text
         Span userName = new Span(username);
-        userName.getStyle().set("color", "#ffffff");
+        userName.getStyle()
+                .set("color", "#ffffff")
+                .set("text-decoration", "underline")
+                .set("cursor", "pointer");
+
+        userName.getElement().addEventListener("click", event -> {
+            try {
+                // Username that was clicked
+                String clickedUsername = username;
+
+                // Read logged-in user
+                String currentUsername = Files.readString(Paths.get("loggedinuser.txt")).trim();
+
+                if (clickedUsername.equals(currentUsername)) {
+                    // If clicking own username, write logged-in user
+                    Files.writeString(Paths.get("selecteduser.txt"), currentUsername);
+                } else {
+                    // If clicking other user, write their username
+                    Files.writeString(Paths.get("selecteduser.txt"), clickedUsername);
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            UI.getCurrent().navigate("userpage");
+        });
+
 
 // Post time label with white text
         Span commentTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
@@ -640,8 +674,29 @@ public class Media extends VerticalLayout {
                 .set("background-color", "white")
                 .set("border", "1px solid #ffffff");
 
-        Span originalPoster = new Span(parentPost != null ? parentPost.getUserName() : "Unknown");
-        originalPoster.getStyle().set("color", "#ffffff");  // White text
+        String originalPosterName = parentPost != null ? parentPost.getUserName() : "Unknown";
+        Span originalPoster = new Span(originalPosterName);
+        originalPoster.getStyle()
+                .set("color", "#ffffff")
+                .set("text-decoration", "underline")
+                .set("cursor", "pointer");
+
+        originalPoster.getElement().addEventListener("click", e -> {
+            try {
+                String clickedUsername = originalPosterName;
+                String currentUsername = Files.readString(Paths.get("loggedinuser.txt")).trim();
+
+                if (clickedUsername.equals(currentUsername)) {
+                    Files.writeString(Paths.get("selecteduser.txt"), currentUsername);
+                } else {
+                    Files.writeString(Paths.get("selecteduser.txt"), clickedUsername);
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            UI.getCurrent().navigate("userpage");
+        });
+
         Span originalTime = new Span("Posted on: " + Post.formatTimestamp(parentPost != null ? parentPost.getTimestamp() : postData.getTimestamp()));
         originalTime.getStyle().set("color", "#ffffff");  // White text
         topRow.add(originalAvatar, originalPoster, originalTime);
@@ -707,7 +762,26 @@ public class Media extends VerticalLayout {
                 .set("border", "1px solid #ffffff");
 
         Span replyUser = new Span(replyUsername);
-        replyUser.getStyle().set("color", "#ffffff");
+        replyUser.getStyle()
+                .set("color", "#ffffff")
+                .set("text-decoration", "underline")
+                .set("cursor", "pointer");
+
+        replyUser.getElement().addEventListener("click", e -> {
+            try {
+                String clickedUsername = replyUsername;
+                String currentUsername = Files.readString(Paths.get("loggedinuser.txt")).trim();
+
+                if (clickedUsername.equals(currentUsername)) {
+                    Files.writeString(Paths.get("selecteduser.txt"), currentUsername);
+                } else {
+                    Files.writeString(Paths.get("selecteduser.txt"), clickedUsername);
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            UI.getCurrent().navigate("userpage");
+        });
 
         Span replyTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
         replyTime.getStyle().set("color", "#ffffff");
