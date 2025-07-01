@@ -70,8 +70,6 @@ public class Media extends VerticalLayout {
 // Create avatar with image (not initials)
         Avatar userAvatar2 = new Avatar();
         userAvatar2.setImage(avatarUrl);
-
-// Style the avatar
         userAvatar2.getStyle()
                 .set("background-color", "white")
                 .set("border", "1px solid black");

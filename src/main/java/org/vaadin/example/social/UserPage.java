@@ -644,7 +644,9 @@ public class UserPage extends VerticalLayout {
                 .set("background-color", "#2a2a2b")
                 .set("color", "#ffffff")
                 .set("border", "1px solid #555")
-                .set("border-radius", "5px");
+                .set("border-radius", "5px")
+                .set("font-weight", "normal");
+
 
         Path statusFile = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Status.txt");
         if (Files.exists(statusFile)) {
