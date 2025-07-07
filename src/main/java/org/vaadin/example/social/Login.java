@@ -9,6 +9,11 @@ import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import com.vaadin.flow.router.Route;
 
 import java.io.File;
@@ -145,6 +150,38 @@ public class Login extends VerticalLayout {
                 User newUser = new User(username, password);
                 newUser.saveToFile();
 
+                try {
+                    Path userDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username);
+
+                    // Ordner anlegen falls nötig
+                    if (!Files.exists(userDir)) {
+                        Files.createDirectories(userDir);
+                    }
+
+                    // Forum-Datei erstellen
+                    Path forumFile = userDir.resolve("Forum");
+                    if (!Files.exists(forumFile)) {
+                        Files.writeString(forumFile, "all", StandardCharsets.UTF_8);
+                    }
+
+                    // Followed Forums Ordner und Datei anlegen
+                    Path followedForumsDir = userDir.resolve("Followed Forums");
+                    if (!Files.exists(followedForumsDir)) {
+                        Files.createDirectories(followedForumsDir);
+                    }
+
+                    Path allFile = followedForumsDir.resolve("all");
+                    if (!Files.exists(allFile)) {
+                        Files.writeString(allFile, "all", StandardCharsets.UTF_8);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Notification error = new Notification("Error creating user folders/files!", 3000);
+                    error.addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    error.open();
+                    return;
+                }
+
                 Notification success = new Notification("User successfully registered!", 3000);
                 success.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 success.open();
@@ -154,6 +191,8 @@ public class Login extends VerticalLayout {
                 error.open();
             }
         });
+
+
 
         VerticalLayout registerLayout = new VerticalLayout(usernameField, passwordField, registerButton);
         registerLayout.setAlignItems(Alignment.CENTER);

@@ -76,7 +76,7 @@ public class User {
 
     public static User loadFromFile(String username) {
        // String userDirectoryPath = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users";
-        String userDirectoryPath = "C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users";
+        String userDirectoryPath = "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users";
         String filePath = userDirectoryPath + "/" + username + ".txt";
         File userFile = new File(filePath);
 
@@ -119,7 +119,7 @@ public class User {
     public void saveToFile() {
         // Define the directory path for users
        // String userDirectoryPath = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users";
-        String userDirectoryPath = "C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users";
+        String userDirectoryPath = "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users";
 
 
         // Create the directory if it doesn't exist

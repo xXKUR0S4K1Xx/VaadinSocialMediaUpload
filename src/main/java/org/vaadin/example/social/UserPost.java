@@ -24,7 +24,7 @@ import java.util.List;
 @Route("userpost")
 public class UserPost {
 
-    private static final String postsDirectory = "C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\posts";
+    private static final String postsDirectory = "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/posts";
 
     // No-argument version — reads posts from the current forum folder of the logged-in user
     public static List<Post> readPostsFromFiles() {
@@ -104,7 +104,7 @@ public class UserPost {
         List<Post> posts = new ArrayList<>();
 
         // Read the forum name from user's Forum file
-        Path forumFilePath = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Forum");
+        Path forumFilePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
         String forumName;
         try {
             List<String> lines = Files.readAllLines(forumFilePath);
@@ -119,7 +119,7 @@ public class UserPost {
             return posts;
         }
 
-        Path forumPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\Forum", forumName);
+        Path forumPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum", forumName);
 
         // Create forum directory if missing
         if (!Files.exists(forumPostsDir)) {
@@ -242,8 +242,8 @@ public class UserPost {
 
     public static List<Post> readPostsForUserSortedByLikes(String username) {
         List<Post> posts = new ArrayList<>();
-     //   Path userPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Posts");
-        Path userPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Posts");
+        Path userPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Posts");
+     //   Path userPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Posts");
 
 
         if (!Files.exists(userPostsDir)) {
@@ -319,7 +319,7 @@ public class UserPost {
 
         // Save all posts back to the current forum posts directory
         // Get forum name from user's Forum file
-        Path forumFilePath = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Forum");
+        Path forumFilePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
         String forumName;
         try {
             List<String> lines = Files.readAllLines(forumFilePath);
@@ -334,7 +334,7 @@ public class UserPost {
             return;
         }
 
-        Path forumPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\Forum", forumName);
+        Path forumPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum", forumName);
         if (!Files.exists(forumPostsDir)) {
             try {
                 Files.createDirectories(forumPostsDir);
@@ -455,7 +455,7 @@ public class UserPost {
             System.err.println("Could not find forum name for user " + currentUserName);
             return;
         }
-        Path forumPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\Forum", forumName);
+        Path forumPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum", forumName);
 
         int nextId = getNextPostId(forumPostsDir);
 
@@ -490,7 +490,7 @@ public class UserPost {
             System.err.println("Could not find forum name for user " + username);
             return;
         }
-        Path forumPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\Forum", forumName);
+        Path forumPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum", forumName);
 
         try {
             // Create forum folder if not exist
@@ -525,7 +525,7 @@ public class UserPost {
 
     // Erhöht den Post-Zähler eines Benutzers, wenn dieser einen neuen Post (kein Reply) erstellt.
     private static void updateUserPosts(String username) {
-        File userDirectory = new File("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users");
+        File userDirectory = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users");
 
         File[] userFiles = userDirectory.listFiles((dir, name) -> name.endsWith(".txt"));
 
@@ -575,7 +575,7 @@ public class UserPost {
             System.err.println("Could not find forum name for user " + currentUserName);
             return null;
         }
-        Path forumPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\Forum", forumName);
+        Path forumPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum", forumName);
 
         int nextId = getNextPostId(forumPostsDir);
 
@@ -606,7 +606,7 @@ public class UserPost {
         String username = post.getUserName();
         if (username == null || username.isEmpty()) return;
 
-        Path userPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Posts");
+        Path userPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Posts");
 
         try {
             Files.createDirectories(userPostsDir);
@@ -643,7 +643,7 @@ public class UserPost {
 
     // Helper: get user's forum name from their Forum file
     private static String getUserForumName(String username) {
-        Path forumFilePath = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Forum");
+        Path forumFilePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
         try {
             List<String> lines = Files.readAllLines(forumFilePath);
             if (lines.isEmpty()) return null;

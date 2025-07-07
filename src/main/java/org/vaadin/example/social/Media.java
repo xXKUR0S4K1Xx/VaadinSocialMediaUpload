@@ -534,11 +534,11 @@ public class Media extends VerticalLayout {
         if (currentUser != null) {
 
             Path followedForumsFolder = Paths.get(
-                    "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/users",
+                    "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
                     username,
                     "Followed Forums"
             );
-
+            // C:\\Users\\sdachs\\IdeaProjects\\VaadinSocialMediaUpload\\users\\a\Followed Forums
             try (Stream<Path> stream = Files.list(followedForumsFolder)) {
                 List<String> followedForumNames = stream
                         .filter(Files::isRegularFile)
@@ -566,7 +566,7 @@ public class Media extends VerticalLayout {
                                 .set("padding", "8px 12px");
                         forumButton.addClickListener(ev -> {
                             Path forumFilePath = Paths.get(
-                                    "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/users",
+                                    "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
                                     username,
                                     "Forum"
                             );
@@ -587,7 +587,7 @@ public class Media extends VerticalLayout {
                 }
 
                 Path forumFilePath = Paths.get(
-                        "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/users",
+                        "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
                         username,
                         "Forum"
                 );
@@ -1074,7 +1074,7 @@ public class Media extends VerticalLayout {
 
         // This is the file named "Forum" inside the user folder
         Path forumFilePath = Paths.get(
-                "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/users",
+                "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
                 username, "Forum"
         );
         System.out.println("Forum file path: " + forumFilePath);
@@ -1091,7 +1091,7 @@ public class Media extends VerticalLayout {
 
         // This is the folder inside /Forum/ that matches the forum name
         Path forumFolder = Paths.get(
-                "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/Forum",
+                "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum",
                 forumName
         );
         System.out.println("Resolved forum folder path: " + forumFolder);
@@ -1145,7 +1145,7 @@ public class Media extends VerticalLayout {
         }
 
         Path forumFilePath = Paths.get(
-                "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/users",
+                "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
                 username,
                 "Forum"
         );

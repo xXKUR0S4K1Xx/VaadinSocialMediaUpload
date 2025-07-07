@@ -359,7 +359,7 @@ public class AvatarSelection extends VerticalLayout {
 
         int maxSizeInBytes = 5 * 1024 * 1024;
        // String avatarDirPath = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users/" + username + "/Avatar";
-        String avatarDirPath = "C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users" + username + "/Avatar";
+        String avatarDirPath = "C:/Users//sdachs/IdeaProjects/VaadinSocialMediaUpload/users/" + username + "/Avatar";
 
 
         upload.addFileRejectedListener(event -> {

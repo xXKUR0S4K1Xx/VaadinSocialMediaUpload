@@ -64,16 +64,16 @@ public class UserPage extends VerticalLayout {
         String avatarUrl = "";
 
         try {
-         //   selectedUsername = Files.readString(Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/selecteduser.txt")).trim();
-            selectedUsername = Files.readString(Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\selecteduser.txt")).trim();
+            selectedUsername = Files.readString(Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/selecteduser.txt")).trim();
+         //   selectedUsername = Files.readString(Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\selecteduser.txt")).trim();
 
             if (!selectedUsername.isEmpty()) {
                 selectedUser = User.loadFromFile(selectedUsername);
                 if (selectedUser != null) {
                     username = selectedUser.getUsername();
 
-                   // Path followBasePath = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Follow");
-                    Path followBasePath = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Follow");
+                    Path followBasePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Follow");
+                   // Path followBasePath = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Follow");
 
 
                     Path followingPath = followBasePath.resolve("Following");
@@ -592,8 +592,8 @@ public class UserPage extends VerticalLayout {
                     return;
                 }
 
-               // Path basePath = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users");
-                Path basePath = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users");
+                Path basePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users");
+            //    Path basePath = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users");
 
 
                 Path currentUserFollowingDir = basePath.resolve(currentUsername).resolve("Follow").resolve("Following");
@@ -654,8 +654,8 @@ public class UserPage extends VerticalLayout {
                 .set("font-weight", "normal");
 
 
-        //Path statusFile = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Status.txt");
-        Path statusFile = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Status.txt");
+        Path statusFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Status.txt");
+        //Path statusFile = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Status.txt");
         if (Files.exists(statusFile)) {
             try {
                 String existingStatus = Files.readString(statusFile, StandardCharsets.UTF_8);
@@ -673,8 +673,8 @@ public class UserPage extends VerticalLayout {
 
         saveButton.addClickListener(event -> {
             String statusText = statusArea.getValue();
-           // Path userDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username);
-            Path userDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username);
+            Path userDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username);
+            //Path userDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username);
             try {
                 Files.createDirectories(userDir);
                 Files.writeString(userDir.resolve("Status.txt"), statusText, StandardCharsets.UTF_8,
@@ -1116,10 +1116,10 @@ public class UserPage extends VerticalLayout {
         add(new Span("User profile for: " + username));
     }
     private List<String> loadList(String username, String listName) throws IOException {
-      //  Path dir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users",
-         //       username, "Follow", listName);
-        Path dir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users",
+        Path dir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
                 username, "Follow", listName);
+        //Path dir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users",
+          //      username, "Follow", listName);
         if (!Files.exists(dir)) return Collections.emptyList();
         try (Stream<Path> files = Files.list(dir)) {
             return files
