@@ -17,19 +17,32 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+
 
 @Route("userpost")
 public class UserPost {
 
-    private static final String postsDirectory = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/posts";
+    private static final String postsDirectory = "C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\posts";
 
-    // Read posts from files and return a list of Post objects in Media
+    // No-argument version — reads posts from the current forum folder of the logged-in user
     public static List<Post> readPostsFromFiles() {
+        User currentUser = User.getCurrentUser();
+        if (currentUser == null) {
+            System.err.println("No logged-in user found.");
+            return Collections.emptyList();
+        }
+        String username = currentUser.getUsername();
+        return readPostsFromCurrentForum(username);
+    }
+
+    // This is kept for compatibility but not used in current logic
+    public static List<Post> readPostsFromFiles(Path directory) {
         List<Post> posts = new ArrayList<>();
 
         try {
-            Files.list(Paths.get(postsDirectory))
+            Files.list(directory)
                     .filter(Files::isRegularFile)
                     .forEach(file -> {
                         try {
@@ -37,7 +50,6 @@ public class UserPost {
                             for (String line : lines) {
                                 String[] parts = line.split("#", -1);
 
-                                // Trim to first 8 fields if too many
                                 if (parts.length > 8) {
                                     parts = Arrays.copyOf(parts, 8);
                                     line = String.join("#", parts);
@@ -45,136 +57,13 @@ public class UserPost {
 
                                 if (parts.length == 8) {
                                     try {
-                                        // Decode postContent here
                                         String decodedContent = Post.decodeContent(parts[4]);
-
-                                        Post post = new Post(
-                                                parts[0], // postId
-                                                parts[1], // parentId
-                                                Integer.parseInt(parts[2]), // likes
-                                                parts[3], // commenters (parentUser)
-                                                decodedContent, // decoded postContent
-                                                parts[5], // timestamp
-                                                parts[6], // userName
-                                                parts[7]  // likedUsers
-                                        );
-                                        posts.add(post);
-                                    } catch (Exception e) {
-                                        System.err.println("Invalid post data: " + line);
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }
-                        } catch (IOException e) {
-                            System.err.println("Error reading file: " + file);
-                            e.printStackTrace();
-                        }
-                    });
-        } catch (IOException e) {
-            System.err.println("Error listing files in directory: " + postsDirectory);
-            e.printStackTrace();
-        }
-
-        // Sort posts by postId descending (latest first)
-        posts.sort((p1, p2) -> {
-            try {
-                return Integer.compare(
-                        Integer.parseInt(p2.getPostId()),
-                        Integer.parseInt(p1.getPostId())
-                );
-            } catch (NumberFormatException e) {
-                return 0;
-            }
-        });
-
-        return posts;
-    }
-
-
-    // same as the above but for The userpage. It only gets one users posts
-    public static List<Post> readPostsForUser(String username) {
-        List<Post> posts = new ArrayList<>();
-        Path userPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Posts");
-
-        if (!Files.exists(userPostsDir)) {
-            return posts; // Return empty if folder doesn't exist
-        }
-
-        try {
-            Files.list(userPostsDir)
-                    .filter(Files::isRegularFile)
-                    .forEach(file -> {
-                        try {
-                            List<String> lines = Files.readAllLines(file);
-                            for (String line : lines) {
-                                String[] parts = line.split("#", -1);
-                                if (parts.length > 8) {
-                                    parts = Arrays.copyOf(parts, 8);
-                                    line = String.join("#", parts);
-                                }
-
-                                if (parts.length == 8) {
-                                    // Decode content here!
-                                    String decodedContent = Post.decodeContent(parts[4]);
-
-                                    Post post = new Post(
-                                            parts[0], // postId
-                                            parts[1], // parentId
-                                            Integer.parseInt(parts[2]), // likes
-                                            parts[3], // parentUser
-                                            decodedContent, // decoded content
-                                            parts[5], // timestamp
-                                            parts[6], // username
-                                            parts[7]  // likedUsers
-                                    );
-                                    posts.add(post);
-                                }
-                            }
-                        } catch (IOException e) {
-                            System.err.println("Error reading file: " + file);
-                            e.printStackTrace();
-                        }
-                    });
-        } catch (IOException e) {
-            System.err.println("Error listing files for user: " + username);
-            e.printStackTrace();
-        }
-
-        // Sort by postId descending (latest first)
-        posts.sort((p1, p2) -> Integer.compare(
-                Integer.parseInt(p2.getPostId()),
-                Integer.parseInt(p1.getPostId())
-        ));
-
-        return posts;
-    }
-
-
-    public static List<Post> readPostsSortedByLikes() {
-        List<Post> posts = new ArrayList<>();
-
-        try {
-            Files.list(Paths.get(postsDirectory))
-                    .filter(Files::isRegularFile)
-                    .forEach(file -> {
-                        try {
-                            List<String> lines = Files.readAllLines(file);
-                            for (String line : lines) {
-                                String[] parts = line.split("#", -1);
-
-                                if (parts.length > 8) {
-                                    parts = Arrays.copyOf(parts, 8);
-                                    line = String.join("#", parts);
-                                }
-
-                                if (parts.length == 8) {
-                                    try {
                                         Post post = new Post(
                                                 parts[0],
                                                 parts[1],
                                                 Integer.parseInt(parts[2]),
                                                 parts[3],
-                                                parts[4],
+                                                decodedContent,
                                                 parts[5],
                                                 parts[6],
                                                 parts[7]
@@ -192,11 +81,160 @@ public class UserPost {
                         }
                     });
         } catch (IOException e) {
-            System.err.println("Error listing files in directory: " + postsDirectory);
+            System.err.println("Error listing files in directory: " + directory);
             e.printStackTrace();
         }
 
-        // ✅ Sort by number of likes descending
+        posts.sort((p1, p2) -> {
+            try {
+                return Integer.compare(
+                        Integer.parseInt(p2.getPostId()),
+                        Integer.parseInt(p1.getPostId())
+                );
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        });
+
+        return posts;
+    }
+
+    // Same method name, but now reads posts from the forum folder indicated in user's Forum file
+    public static List<Post> readPostsForUser(String username) {
+        List<Post> posts = new ArrayList<>();
+
+        // Read the forum name from user's Forum file
+        Path forumFilePath = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Forum");
+        String forumName;
+        try {
+            List<String> lines = Files.readAllLines(forumFilePath);
+            if (lines.isEmpty()) {
+                System.err.println("Forum file is empty for user " + username);
+                return posts;
+            }
+            forumName = lines.get(0).trim();
+        } catch (IOException e) {
+            System.err.println("Could not read Forum file for user " + username);
+            e.printStackTrace();
+            return posts;
+        }
+
+        Path forumPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\Forum", forumName);
+
+        // Create forum directory if missing
+        if (!Files.exists(forumPostsDir)) {
+            try {
+                Files.createDirectories(forumPostsDir);
+            } catch (IOException e) {
+                System.err.println("Could not create forum posts directory: " + forumPostsDir);
+                e.printStackTrace();
+                return posts;
+            }
+        }
+
+        // Read posts from forum posts directory
+        try {
+            Files.list(forumPostsDir)
+                    .filter(Files::isRegularFile)
+                    .forEach(file -> {
+                        try {
+                            List<String> lines = Files.readAllLines(file);
+                            for (String line : lines) {
+                                String[] parts = line.split("#", -1);
+                                if (parts.length > 8) {
+                                    parts = Arrays.copyOf(parts, 8);
+                                    line = String.join("#", parts);
+                                }
+
+                                if (parts.length == 8) {
+                                    String decodedContent = Post.decodeContent(parts[4]);
+                                    Post post = new Post(
+                                            parts[0],
+                                            parts[1],
+                                            Integer.parseInt(parts[2]),
+                                            parts[3],
+                                            decodedContent,
+                                            parts[5],
+                                            parts[6],
+                                            parts[7]
+                                    );
+                                    posts.add(post);
+                                }
+                            }
+                        } catch (IOException e) {
+                            System.err.println("Error reading file: " + file);
+                            e.printStackTrace();
+                        }
+                    });
+        } catch (IOException e) {
+            System.err.println("Error listing files for forum directory: " + forumPostsDir);
+            e.printStackTrace();
+        }
+
+        posts.sort((p1, p2) -> Integer.compare(
+                Integer.parseInt(p2.getPostId()),
+                Integer.parseInt(p1.getPostId())
+        ));
+
+        return posts;
+    }
+
+    // Helper method used by readPostsFromFiles()
+    private static List<Post> readPostsFromCurrentForum(String username) {
+        return readPostsForUser(username);
+    }
+    public static List<Post> readPostsSortedByLikes() {
+        return readPostsSortedByLikes(Paths.get(postsDirectory));
+    }
+
+    // Overloaded version with Path argument
+    public static List<Post> readPostsSortedByLikes(Path directory) {
+        List<Post> posts = new ArrayList<>();
+
+        try {
+            Files.list(directory)
+                    .filter(Files::isRegularFile)
+                    .forEach(file -> {
+                        try {
+                            List<String> lines = Files.readAllLines(file);
+                            for (String line : lines) {
+                                String[] parts = line.split("#", -1);
+
+                                if (parts.length > 8) {
+                                    parts = Arrays.copyOf(parts, 8);
+                                    line = String.join("#", parts);
+                                }
+
+                                if (parts.length == 8) {
+                                    try {
+                                        Post post = new Post(
+                                                parts[0],    // postId
+                                                parts[1],    // parentId
+                                                Integer.parseInt(parts[2]),  // likes
+                                                parts[3],    // commenters (parentUser)
+                                                parts[4],    // postContent (not decoded here, decode if needed)
+                                                parts[5],    // timestamp
+                                                parts[6],    // userName
+                                                parts[7]     // likedUsers
+                                        );
+                                        posts.add(post);
+                                    } catch (Exception e) {
+                                        System.err.println("Invalid post data: " + line);
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        } catch (IOException e) {
+                            System.err.println("Error reading file: " + file);
+                            e.printStackTrace();
+                        }
+                    });
+        } catch (IOException e) {
+            System.err.println("Error listing files in directory: " + directory);
+            e.printStackTrace();
+        }
+
+        // Sort by likes descending
         posts.sort((p1, p2) -> Integer.compare(p2.getLikes(), p1.getLikes()));
 
         return posts;
@@ -204,7 +242,9 @@ public class UserPost {
 
     public static List<Post> readPostsForUserSortedByLikes(String username) {
         List<Post> posts = new ArrayList<>();
-        Path userPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Posts");
+     //   Path userPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Posts");
+        Path userPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Posts");
+
 
         if (!Files.exists(userPostsDir)) {
             return posts; // Return empty if folder doesn't exist
@@ -258,7 +298,16 @@ public class UserPost {
 
     //Aktualisiert einen bestehenden Post (z. B. bei Like oder Edit) und speichert alle Posts neu in den Dateien.
     public static void savePost(Post updatedPost) {
-        List<Post> posts = readPostsFromFiles();
+        // Get current user
+        User currentUser = User.getCurrentUser();
+        if (currentUser == null) {
+            System.err.println("No logged-in user found.");
+            return;
+        }
+        String username = currentUser.getUsername();
+
+        // Read posts from current user's forum folder
+        List<Post> posts = readPostsForUser(username);
 
         // Update the post in the list
         for (int i = 0; i < posts.size(); i++) {
@@ -268,18 +317,49 @@ public class UserPost {
             }
         }
 
-        // Save all posts back to the main post directory
+        // Save all posts back to the current forum posts directory
+        // Get forum name from user's Forum file
+        Path forumFilePath = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Forum");
+        String forumName;
+        try {
+            List<String> lines = Files.readAllLines(forumFilePath);
+            if (lines.isEmpty()) {
+                System.err.println("Forum file is empty for user " + username);
+                return;
+            }
+            forumName = lines.get(0).trim();
+        } catch (IOException e) {
+            System.err.println("Could not read Forum file for user " + username);
+            e.printStackTrace();
+            return;
+        }
+
+        Path forumPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\Forum", forumName);
+        if (!Files.exists(forumPostsDir)) {
+            try {
+                Files.createDirectories(forumPostsDir);
+            } catch (IOException e) {
+                System.err.println("Could not create forum posts directory: " + forumPostsDir);
+                e.printStackTrace();
+                return;
+            }
+        }
+
+        // Save updated posts to forum posts directory
         for (Post post : posts) {
             try {
-                Files.write(Paths.get(postsDirectory, post.getPostId()), post.toString().getBytes());
+                Path postFile = forumPostsDir.resolve(post.getPostId());
+                Files.write(postFile, post.toString().getBytes());
             } catch (IOException e) {
+                System.err.println("Failed to save post: " + post.getPostId());
                 e.printStackTrace();
             }
         }
 
-        // ✅ Also update the post in the user's personal directory
+        // Also save the post in the user's personal directory (your existing method)
         savePostToUserDirectory(updatedPost, true);
     }
+
 
     // Create the UI component for replying to a post
     public Component createReplyInputSection(Post parentPost) {
@@ -351,76 +431,86 @@ public class UserPost {
 
 
 
-    //Erstellt eine Antwort (Reply) auf einen bestehenden Post.
+    // Erstellt eine Antwort (Reply) auf einen bestehenden Post.
     public static void createAndSaveReply(Post parentPost, String replyContent) {
         if (replyContent == null || replyContent.trim().isEmpty()) {
             return; // Don't create a post if the content is empty
         }
 
-        // Get current user from file
-        String currentUser = "Guest";
-        try {
-            currentUser = Files.readString(Paths.get("loggedinuser.txt")).trim();
-        } catch (IOException e) {
-            e.printStackTrace();
+        // Get current user
+        User currentUser = User.getCurrentUser();
+        if (currentUser == null) {
+            System.err.println("No logged-in user found.");
+            return;
         }
+        String currentUserName = currentUser.getUsername();
 
         // Get current time in seconds
         long currentTimeInSeconds = System.currentTimeMillis() / 1000;
         String formattedTimestamp = Post.formatTimestamp(String.valueOf(currentTimeInSeconds));
 
-        // Find the maximum postId in the existing posts and create a new unique ID for the reply
-        File folder = new File(postsDirectory);
-        File[] files = folder.listFiles((dir, name) -> !name.contains("."));
-        int nextId = files != null && files.length > 0 ? Arrays.stream(files)
-                .mapToInt(file -> Integer.parseInt(file.getName()))
-                .max()
-                .orElse(0) + 1 : 1;
+        // Find the maximum postId in the user's forum folder to generate a new unique ID
+        String forumName = getUserForumName(currentUserName);
+        if (forumName == null) {
+            System.err.println("Could not find forum name for user " + currentUserName);
+            return;
+        }
+        Path forumPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\Forum", forumName);
+
+        int nextId = getNextPostId(forumPostsDir);
 
         // Create a new reply post with a unique ID
         Post newReply = new Post(
-                String.valueOf(nextId),             // 1. postId
-                parentPost.getPostId(),             // 2. parentId
-                0,                                  // 3. likes (default value)
-                parentPost.getUserName(),           // 4. parentUser
-                replyContent,                       // 5. postContent
-                formattedTimestamp,                 // 6. timestamp
-                currentUser,                        // 7. userName
-                ""                                   // 8. likedUsers
+                String.valueOf(nextId),          // postId
+                parentPost.getPostId(),          // parentId
+                0,                              // likes
+                parentPost.getUserName(),        // parentUser
+                replyContent,                   // postContent
+                formattedTimestamp,             // timestamp
+                currentUserName,                // userName
+                ""                             // likedUsers
         );
 
-
-
-
         // Save the new reply post
-        saveNewPost(newReply, false); // False means this is not a reply, so post count should be updated for the replying user
+        saveNewPost(newReply, true); // true means it is a reply, so no post count increment
     }
 
-
-
-    //Speichert einen neuen Post oder Reply als Datei.
+    // Speichert einen neuen Post oder Reply als Datei.
     public static void saveNewPost(Post newPost, boolean isReply) {
+        // Get forum folder for user
+        User currentUser = User.getCurrentUser();
+        if (currentUser == null) {
+            System.err.println("No logged-in user found.");
+            return;
+        }
+        String username = currentUser.getUsername();
+
+        String forumName = getUserForumName(username);
+        if (forumName == null) {
+            System.err.println("Could not find forum name for user " + username);
+            return;
+        }
+        Path forumPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\Forum", forumName);
+
         try {
-            // Save to main directory
-            Files.write(Paths.get(postsDirectory, newPost.getPostId()), newPost.toString().getBytes());
+            // Create forum folder if not exist
+            if (!Files.exists(forumPostsDir)) {
+                Files.createDirectories(forumPostsDir);
+            }
+            // Save to forum directory
+            Files.write(forumPostsDir.resolve(newPost.getPostId()), newPost.toString().getBytes());
 
             // Save to user-specific folder
-            savePostToUserDirectory(newPost, false); // false because it's a new post, not an overwrite
+            savePostToUserDirectory(newPost, false); // false because it's a new post, not overwrite
 
-            // Only update post count if it's a top-level post
+            // Only update post count if it's a top-level post (not reply)
             if (!isReply) {
                 updateUserPosts(newPost.getUserName());
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-
-
-
-
 
     // Find a post by its ID
     public static Post findPostById(String parentId) {
@@ -433,30 +523,26 @@ public class UserPost {
         return null;
     }
 
-    //Erhöht den Post-Zähler eines Benutzers, wenn dieser einen neuen Post (kein Reply) erstellt.
+    // Erhöht den Post-Zähler eines Benutzers, wenn dieser einen neuen Post (kein Reply) erstellt.
     private static void updateUserPosts(String username) {
-        File userDirectory = new File("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users");
+        File userDirectory = new File("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users");
+
         File[] userFiles = userDirectory.listFiles((dir, name) -> name.endsWith(".txt"));
 
         if (userFiles != null) {
             for (File userFile : userFiles) {
                 if (userFile.getName().equals(username + ".txt")) {
-                    // Read the file, update the posts, and save it back
                     try {
                         List<String> lines = Files.readAllLines(userFile.toPath());
                         if (!lines.isEmpty()) {
                             String[] userParts = lines.get(0).split("#");
 
-                            // Assuming the format: username#numberOfPosts#numberOfLikes
                             if (userParts.length == 3) {
-                                // Get the current number of posts (index 1 in userParts)
                                 int currentPosts = Integer.parseInt(userParts[1]);
-                                userParts[1] = String.valueOf(currentPosts + 1); // Increment posts by 1
+                                userParts[1] = String.valueOf(currentPosts + 1);
 
-                                // Rebuild the user data line
                                 String updatedUserData = String.join("#", userParts);
 
-                                // Write the updated data back to the file
                                 Files.write(userFile.toPath(), updatedUserData.getBytes());
                                 System.out.println("Updated posts for user: " + username);
                             }
@@ -473,23 +559,25 @@ public class UserPost {
         }
     }
 
-    //Erstellt einen ganz neuen Post (kein Reply) und speichert ihn.
+    // Erstellt einen ganz neuen Post (kein Reply) und speichert ihn.
     public static Post createAndSaveNewPost(String postContent) {
-        // Get all posts and find the maximum existing post ID
-        File folder = new File(postsDirectory);
-        File[] files = folder.listFiles((dir, name) -> !name.contains("."));
-        int nextId = files != null && files.length > 0 ? Arrays.stream(files)
-                .mapToInt(file -> Integer.parseInt(file.getName()))
-                .max()
-                .orElse(0) + 1 : 1;
-
-        // Get current user from file
-        String currentUser = "Guest";
-        try {
-            currentUser = Files.readString(Paths.get("loggedinuser.txt")).trim();
-        } catch (IOException e) {
-            e.printStackTrace();
+        // Get current user
+        User currentUser = User.getCurrentUser();
+        if (currentUser == null) {
+            System.err.println("No logged-in user found.");
+            return null;
         }
+        String currentUserName = currentUser.getUsername();
+
+        // Get forum name and posts directory
+        String forumName = getUserForumName(currentUserName);
+        if (forumName == null) {
+            System.err.println("Could not find forum name for user " + currentUserName);
+            return null;
+        }
+        Path forumPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\Forum", forumName);
+
+        int nextId = getNextPostId(forumPostsDir);
 
         // Get current time in seconds
         long currentTimeInSeconds = System.currentTimeMillis() / 1000;
@@ -497,28 +585,28 @@ public class UserPost {
 
         // Create the new post
         Post newPost = new Post(
-                String.valueOf(nextId),    // 1. postId
-                "0",                       // 2. parentId
-                0,                         // 3. likes
-                "",                        // 4. parentUser
-                postContent,              // 5. post content
-                formattedTimestamp,       // 6. timestamp
-                currentUser,              // 7. username
-                ""                        // 8. likedUsers
+                String.valueOf(nextId),   // postId
+                "0",                     // parentId (top-level)
+                0,                       // likes
+                "",                      // parentUser
+                postContent,             // postContent
+                formattedTimestamp,      // timestamp
+                currentUserName,         // userName
+                ""                       // likedUsers
         );
 
-        // Save to main directory and update user stats
+        // Save to forum and user directories and update stats
         saveNewPost(newPost, false);
 
-        // Return the created Post for further usage
         return newPost;
     }
 
+    // Speichert einen Post in den Benutzerordner (Benutzer-Posts).
     public static void savePostToUserDirectory(Post post, boolean overwrite) {
         String username = post.getUserName();
         if (username == null || username.isEmpty()) return;
 
-        Path userPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users", username, "Posts");
+        Path userPostsDir = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Posts");
 
         try {
             Files.createDirectories(userPostsDir);
@@ -552,6 +640,43 @@ public class UserPost {
             e.printStackTrace();
         }
     }
+
+    // Helper: get user's forum name from their Forum file
+    private static String getUserForumName(String username) {
+        Path forumFilePath = Paths.get("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users", username, "Forum");
+        try {
+            List<String> lines = Files.readAllLines(forumFilePath);
+            if (lines.isEmpty()) return null;
+            return lines.get(0).trim();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // Helper: get next post ID in a forum posts directory
+    private static int getNextPostId(Path forumPostsDir) {
+        int maxId = 0;
+        if (Files.exists(forumPostsDir)) {
+            try {
+                maxId = Files.list(forumPostsDir)
+                        .filter(Files::isRegularFile)
+                        .mapToInt(path -> {
+                            try {
+                                return Integer.parseInt(path.getFileName().toString());
+                            } catch (NumberFormatException e) {
+                                return 0;
+                            }
+                        })
+                        .max()
+                        .orElse(0);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return maxId + 1;
+    }
+
 
     private void simulatePlaceholder(TextArea area, String placeholderText) {
         // Track whether we’re showing the fake placeholder
@@ -618,4 +743,5 @@ public class UserPost {
         simulatePlaceholder(area, placeholderText);
         // Optionally you can add more styling or logic here using inputColor
     }
+
 }

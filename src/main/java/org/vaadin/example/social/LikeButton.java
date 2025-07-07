@@ -93,7 +93,8 @@ public class LikeButton extends Div {
     }
 
     private void updateUserLikes(String username) {
-        File userDirectory = new File("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users");
+       // File userDirectory = new File("C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users");
+        File userDirectory = new File("C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users");
         File[] userFiles = userDirectory.listFiles((dir, name) -> name.endsWith(".txt"));
 
         if (userFiles != null) {

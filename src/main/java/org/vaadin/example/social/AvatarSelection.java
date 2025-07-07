@@ -358,7 +358,9 @@ public class AvatarSelection extends VerticalLayout {
         String username = getLoggedInUsername();  // Or however you're retrieving it
 
         int maxSizeInBytes = 5 * 1024 * 1024;
-        String avatarDirPath = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users/" + username + "/Avatar";
+       // String avatarDirPath = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users/" + username + "/Avatar";
+        String avatarDirPath = "C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users" + username + "/Avatar";
+
 
         upload.addFileRejectedListener(event -> {
             Notification.show("File is too large. Max size is 5 MB.");

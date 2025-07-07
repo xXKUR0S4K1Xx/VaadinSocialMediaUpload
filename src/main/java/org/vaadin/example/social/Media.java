@@ -1,16 +1,22 @@
 package org.vaadin.example.social;
-
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.avatar.Avatar;
-import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.UI;
+import java.util.List;
+import java.util.stream.Stream;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.popover.Popover;
 import com.vaadin.flow.component.popover.PopoverPosition;
 import com.vaadin.flow.component.popover.PopoverVariant;
@@ -22,16 +28,10 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.stream.Stream;
+
 
 @Route("media")  // Defines the route for this view. When navigating to '/media', this view is displayed.
 public class Media extends VerticalLayout {
@@ -45,6 +45,7 @@ public class Media extends VerticalLayout {
     private VirtualList<Object> postList;
     private List<Post> allPosts;
     private Button sortButton;
+
 
 
     public Media() {  // Constructor that initializes the Media view.
@@ -391,22 +392,21 @@ public class Media extends VerticalLayout {
         middleBar.getStyle()
                 .set("background-color", "#1a1a1b"); // Optional: match card background
 
-        // Virtual List of posts
+
+
         postList = new VirtualList<>();
-        postList.getElement().getStyle().set("scrollbar-gutter", "stable both-edges");  // Ensures the scrollbar appears on both edges.
+        postList.getElement().getStyle().set("scrollbar-gutter", "stable both-edges");
         postList.getElement().getStyle()
                 .set("padding", "0")
                 .set("margin", "0");
 
-        // Create list: first the post input card, then the posts
-        List<Object> items = new ArrayList<>();  // Create a list to store the input card and posts.
-        items.add(middleBar); // Middle bar with button
-        items.add(inputCard);  // Add the input card to the list.
-        items.addAll(UserPost.readPostsFromFiles());  // Add posts read from files.
+        List<Object> items = new ArrayList<>();
+        items.add(middleBar);
+        items.add(inputCard);
+        items.addAll(UserPost.readPostsFromFiles());
 
-        postList.setItems(items);  // Set the list of items (input card + posts) to the VirtualList.
+        postList.setItems(items);
         postList.getElement().getStyle().set("overflow", "hidden");
-
 
         postList.setRenderer(new ComponentRenderer<>(item -> {  // Define how each item should be rendered in the list.
             if (item instanceof Component) {
@@ -477,8 +477,134 @@ public class Media extends VerticalLayout {
         Span allText = new Span("All");
         HorizontalLayout allLayout = new HorizontalLayout(allIcon, allText);
 
-// Add all to sidebar
-        sideBar.add(homeLayout, popularLayout, forYouLayout, allLayout);
+// The container div where the popup will appear under
+        // The container div where the popup will appear under
+        Div containerDiv = new Div();
+        containerDiv.setText("Current Page:");
+        containerDiv.getStyle()
+                .set("margin-top", "20px")
+                .set("font-weight", "bold")
+                .set("color", "white");
+
+// Button to toggle popup visibility
+        Button openPopupButton = new Button("Select a page ▼");
+        openPopupButton.getStyle()
+                .set("background-color", "#1a1a1b")
+                .set("color", "white")
+                .set("border", "1px solid #444")
+                .set("border-radius", "4px")
+                .set("width", "100%");
+
+// Popup Div - initially hidden
+        Div pageSelectionPopup = new Div();
+        pageSelectionPopup.getStyle()
+                .set("background-color", "#1a1a1b")
+                .set("color", "white")
+                .set("border", "1px solid #444")
+                .set("border-radius", "4px")
+                .set("padding", "10px")
+                .set("margin-top", "4px")
+                .set("width", "100%")
+                .set("display", "none")  // hidden initially
+                .set("z-index", "10");
+
+// Add a title inside the popup
+        H4 dialogTitle = new H4("Select a forum");
+        dialogTitle.getStyle().set("color", "white");
+        pageSelectionPopup.add(dialogTitle);
+
+// Vertical layout for the forum buttons inside popup
+        VerticalLayout pageListLayout = new VerticalLayout();
+        pageListLayout.setPadding(false);
+        pageListLayout.setSpacing(false);
+        pageListLayout.setMargin(false);
+        pageSelectionPopup.add(pageListLayout);
+
+// Add components to sidebar in order so popup appears under container div + button
+        sideBar.add(homeLayout, popularLayout, forYouLayout, allLayout, containerDiv, openPopupButton, pageSelectionPopup);
+
+// Toggle popup visibility on button click
+        openPopupButton.addClickListener(event -> {
+            boolean isVisible = "block".equals(pageSelectionPopup.getStyle().get("display"));
+            pageSelectionPopup.getStyle().set("display", isVisible ? "none" : "block");
+        });
+
+// Load followed forums for current user (same as before), but add buttons to pageListLayout:
+        User currentUser = User.getCurrentUser();
+        if (currentUser != null) {
+
+            Path followedForumsFolder = Paths.get(
+                    "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/users",
+                    username,
+                    "Followed Forums"
+            );
+
+            try (Stream<Path> stream = Files.list(followedForumsFolder)) {
+                List<String> followedForumNames = stream
+                        .filter(Files::isRegularFile)
+                        .map(path -> {
+                            String filename = path.getFileName().toString();
+                            int dotIndex = filename.lastIndexOf('.');
+                            return (dotIndex != -1) ? filename.substring(0, dotIndex) : filename;
+                        })
+                        .toList();
+
+                pageListLayout.removeAll();
+                pageListLayout.add(dialogTitle);
+
+                if (followedForumNames.isEmpty()) {
+                    pageListLayout.add(new Span("No followed forums found."));
+                } else {
+                    for (String forumName : followedForumNames) {
+                        Button forumButton = new Button(forumName);
+                        forumButton.getStyle()
+                                .set("width", "100%")
+                                .set("text-align", "left")
+                                .set("background-color", "#1a1a1b")
+                                .set("color", "white")
+                                .set("border", "none")
+                                .set("padding", "8px 12px");
+                        forumButton.addClickListener(ev -> {
+                            Path forumFilePath = Paths.get(
+                                    "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/users",
+                                    username,
+                                    "Forum"
+                            );
+                            try {
+                                Files.writeString(forumFilePath, forumName);
+                                System.out.println("Set current forum to: " + forumName);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            sortMode = 0;
+                            loadPosts();
+
+                            openPopupButton.setText("Select a page ▼ (" + forumName + ")");
+                            pageSelectionPopup.getStyle().set("display", "none");  // close popup
+                        });
+                        pageListLayout.add(forumButton);
+                    }
+                }
+
+                Path forumFilePath = Paths.get(
+                        "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/users",
+                        username,
+                        "Forum"
+                );
+
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                pageListLayout.removeAll();
+                pageListLayout.add(dialogTitle, new Span("Failed to load forums."));
+            }
+        } else {
+            pageListLayout.removeAll();
+            pageListLayout.add(dialogTitle, new Span("User not logged in."));
+        }
+
+
+
 
 // ===== Filler (Overlay) =====
         VerticalLayout filler = new VerticalLayout();
@@ -492,10 +618,9 @@ public class Media extends VerticalLayout {
                 .set("background-color", "#1a1a1b")
                 .set("border-left", "1px solid #444"); // Border on the left side
 
-
 // ===== Content =====
         layout.add(sideBar, content, filler); // Only content is part of layout flow
-        layout.setFlexGrow(1, content);      // Only content should grow
+        layout.setFlexGrow(1, content);       // Only content should grow
 
 // Add overlays after layout
         add(rootLayout, layout);  // Add overlays separately
@@ -932,13 +1057,60 @@ public class Media extends VerticalLayout {
         }
     }
     private void loadPosts() {
+        System.out.println("=== loadPosts() START ===");
+
+        User currentUser = User.getCurrentUser();
+        if (currentUser == null) {
+            System.out.println("No logged-in user found (currentUser == null)");
+            return;
+        }
+
+        String username = currentUser.getUsername();
+        if (username == null || username.isEmpty()) {
+            System.out.println("Invalid username.");
+            return;
+        }
+        System.out.println("Current user: " + username);
+
+        // This is the file named "Forum" inside the user folder
+        Path forumFilePath = Paths.get(
+                "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/users",
+                username, "Forum"
+        );
+        System.out.println("Forum file path: " + forumFilePath);
+
+        String forumName = "";
+        try {
+            forumName = Files.readString(forumFilePath).trim();
+            System.out.println("Forum name read from file content: '" + forumName + "'");
+        } catch (IOException e) {
+            System.out.println("Failed to read forum file: " + forumFilePath);
+            e.printStackTrace();
+            return;
+        }
+
+        // This is the folder inside /Forum/ that matches the forum name
+        Path forumFolder = Paths.get(
+                "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/Forum",
+                forumName
+        );
+        System.out.println("Resolved forum folder path: " + forumFolder);
+
+        if (!Files.isDirectory(forumFolder)) {
+            System.out.println("Forum folder not found or is not a directory: " + forumFolder);
+            return;
+        }
+
+        // Load posts from that forum folder
         if (sortMode == 0) {
-            allPosts = UserPost.readPostsFromFiles();
-            sortButton.setText("New");  // Update button label
+            allPosts = UserPost.readPostsFromFiles(forumFolder);
+            sortButton.setText("New");
         } else {
-            allPosts = UserPost.readPostsSortedByLikes();
+            allPosts = UserPost.readPostsSortedByLikes(forumFolder);
             sortButton.setText("Top");
         }
+
+        System.out.println("Loaded " + allPosts.size() + " posts.");
 
         Component inputCard = createPostInputCard();
         styleInputCard(inputCard);
@@ -949,7 +1121,11 @@ public class Media extends VerticalLayout {
         items.addAll(allPosts);
 
         postList.setItems(items);
+
+        System.out.println("=== loadPosts() END ===");
     }
+
+
 
     private void updateSortButtonHighlight() {
         // Remove existing highlight
@@ -962,6 +1138,29 @@ public class Media extends VerticalLayout {
         } else {
             sortTopButton.addClassName("popup-hover-item-active");
         }
+    }
+    public static String readCurrentForum(String username) {
+        if (username == null || username.isEmpty()) {
+            return null;
+        }
+
+        Path forumFilePath = Paths.get(
+                "C:/Users/0/IdeaProjects/VaadinSocialMediaUpload/users",
+                username,
+                "Forum"
+        );
+
+        if (Files.exists(forumFilePath)) {
+            try {
+                String forum = Files.readString(forumFilePath).trim();
+                if (!forum.isEmpty()) {
+                    return forum;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
     }
 
 

@@ -75,7 +75,8 @@ public class User {
     }
 
     public static User loadFromFile(String username) {
-        String userDirectoryPath = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users";
+       // String userDirectoryPath = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users";
+        String userDirectoryPath = "C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users";
         String filePath = userDirectoryPath + "/" + username + ".txt";
         File userFile = new File(filePath);
 
@@ -117,7 +118,9 @@ public class User {
     // Save the user data to a file in the correct directory (Users folder)
     public void saveToFile() {
         // Define the directory path for users
-        String userDirectoryPath = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users";
+       // String userDirectoryPath = "C:/Users/sdachs/IdeaProjects/vaadin-programmieraufgaben/users";
+        String userDirectoryPath = "C:\\Users\\0\\IdeaProjects\\VaadinSocialMediaUpload\\users";
+
 
         // Create the directory if it doesn't exist
         File userDirectory = new File(userDirectoryPath);
