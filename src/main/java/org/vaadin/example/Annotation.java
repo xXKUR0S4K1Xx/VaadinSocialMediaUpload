@@ -4,13 +4,39 @@ public class Annotation {
 }
 /*
 
-To do:
-Status der user.
-popup mit status der user
-Freundschaftsanfragen
-Notifications.
-Search users/threads
-Whitemode/darkmode
+Next objectives:
+Status der user.            DONE
+popup mit status der user.  NO
+Follows.                    DONE
+Notifications.              NO
+Search users/threads        NO
+Whitemode/darkmode          ONLY DARK
+Subreddits                  NO
+
+
+How to make subreddits:
+    - check which subreddit you are on via: .txt file in User
+    - always go to the default
+    - Different List of posts
+        - Make new Folder with Subreddit name
+        - A "posts" folder is inside.
+        - Load posts from that folder.
+    - Search button searches subreddit
+    - You can follow a subreddit. It shows in userpage
+
+
+
+    - The "Popular" div opens a list of the subreddits ranked by number of posts
+    - recommended wont work yet.
+    - All brings you to the default page where EVERYTHING is saved.
+    - Home brings you to the userpage
+
+
+
+
+
+
+
 
 ForUserPage copy and paste this:
     postList = new VirtualList<>();

@@ -59,7 +59,6 @@ public class Media extends VerticalLayout {
         String avatarUrl = "/avatar/" + username + "/" + getAvatarFilenameForUser(username);
 
 
-
         VerticalLayout popoverContent = new VerticalLayout();
         popoverContent.getStyle().set("background-color", "#282b30")  // Apply the color you need
                 .set("border-radius", "16px")  // Adjust the value as needed to round the corners
@@ -185,7 +184,7 @@ public class Media extends VerticalLayout {
                 isOpened[0] = false;
             }
         });
-
+System.out.println("Hello World");
 
         Icon notificationBell = new Icon(VaadinIcon.BELL);
         notificationBell.getElement().getStyle()
