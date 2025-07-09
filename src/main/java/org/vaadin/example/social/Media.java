@@ -2,6 +2,15 @@ package org.vaadin.example.social;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.io.IOException;
+import com.vaadin.flow.component.notification.Notification;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import com.vaadin.flow.component.select.Select;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,6 +19,7 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.UI;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.avatar.Avatar;
@@ -454,7 +464,6 @@ System.out.println("Hello World");
         sideBar.getStyle()
                 .set("bottom", "0")
                 .set("left", "0")
-                .set("z-index", "1000")
                 .set("border-right", "1px solid #666")
                 .set("background-color", "#1a1a1b")
                 .set("color", "#FFFFFF");
@@ -476,25 +485,21 @@ System.out.println("Hello World");
         Span allText = new Span("All");
         HorizontalLayout allLayout = new HorizontalLayout(allIcon, allText);
 
-// The container div where the popup will appear under
-        // The container div where the popup will appear under
+// Container div above popup
         Div containerDiv = new Div();
-        containerDiv.setText("Current Page:");
+        containerDiv.setText("All Pages:");
         containerDiv.getStyle()
                 .set("margin-top", "20px")
                 .set("font-weight", "bold")
                 .set("color", "white");
 
-// Button to toggle popup visibility
-        Button openPopupButton = new Button("Select a page ▼");
-        openPopupButton.getStyle()
-                .set("background-color", "#1a1a1b")
-                .set("color", "white")
-                .set("border", "1px solid #444")
-                .set("border-radius", "4px")
-                .set("width", "100%");
-
-// Popup Div - initially hidden
+        Div containerDiv2 = new Div();
+        containerDiv2.setText("Current Page:");
+        containerDiv2.getStyle()
+                .set("margin-top", "20px")
+                .set("font-weight", "bold")
+                .set("color", "white");
+// Popup Div
         Div pageSelectionPopup = new Div();
         pageSelectionPopup.getStyle()
                 .set("background-color", "#1a1a1b")
@@ -504,23 +509,248 @@ System.out.println("Hello World");
                 .set("padding", "10px")
                 .set("margin-top", "4px")
                 .set("width", "100%")
-                .set("display", "none")  // hidden initially
+                .set("box-sizing", "border-box") // ← fixes horizontal overflow
+                .set("display", "none")
                 .set("z-index", "10");
 
-// Add a title inside the popup
+// Title for selecting forum
         H4 dialogTitle = new H4("Select a forum");
         dialogTitle.getStyle().set("color", "white");
         pageSelectionPopup.add(dialogTitle);
 
-// Vertical layout for the forum buttons inside popup
+// Vertical layout for forum buttons
         VerticalLayout pageListLayout = new VerticalLayout();
         pageListLayout.setPadding(false);
         pageListLayout.setSpacing(false);
         pageListLayout.setMargin(false);
         pageSelectionPopup.add(pageListLayout);
 
-// Add components to sidebar in order so popup appears under container div + button
-        sideBar.add(homeLayout, popularLayout, forYouLayout, allLayout, containerDiv, openPopupButton, pageSelectionPopup);
+
+// Title for forum creation
+        H4 createTitle = new H4("Create new forum");
+        createTitle.getStyle()
+                .set("color", "white")
+                .set("font-size", "14px")
+                .set("margin", "16px 0 4px 0");
+
+// TextField with dark background and compact height
+// TextField with dark background and rounded corners
+        TextField forumNameField = new TextField();
+        forumNameField.setPlaceholder("");
+        forumNameField.setWidthFull();
+        forumNameField.getElement().getStyle()
+                .set("--lumo-text-field-size", "25px") // Controls the full component height
+                .set("font-size", "12px")              // Adjusts text size
+                .set("line-height", "25px")            // Aligns text vertically
+                .set("border", "1px solid #444")
+                .set("border-radius", "4px")
+                .set("background-color", "#1a1a1b")
+                .set("color", "white")
+                .set("box-sizing", "border-box");
+
+// Button to open popup
+        String forumname = readCurrentForum(username);
+        Button openPopupButton = new Button(forumname);
+        openPopupButton.getStyle()
+                .set("background-color", "#1a1a1b")
+                .set("color", "white")
+                .set("border", "1px solid #444")
+                .set("border-radius", "4px")
+                .set("width", "100%");
+
+// Create button
+        Button createForumButton = new Button("Create");
+        createForumButton.getStyle()
+                .set("background-color", "#333")
+                .set("color", "white")
+                .set("border", "1px solid #444")
+                .set("border-radius", "4px")
+                .set("width", "100%")
+                .set("font-size", "26px")
+                .set("height", "25px")
+                .set("margin-top", "4px");
+
+        createForumButton.addClickListener(event -> {
+            String forumName = forumNameField.getValue().trim();
+            UI ui = UI.getCurrent();
+
+            java.util.function.Consumer<String> showPopup = msg -> {
+                Div popup = new Div();
+                popup.setText(msg);
+                popup.getStyle()
+                        .set("position", "fixed")
+                        .set("top", "50%")
+                        .set("left", "50%")
+                        .set("transform", "translate(-50%, -50%)")
+                        .set("background-color", "#1a1a1b")
+                        .set("color", "#d3d3d3")
+                        .set("padding", "15px 30px")
+                        .set("border-radius", "8px")
+                        .set("box-shadow", "0 4px 10px rgba(0,0,0,0.5)")
+                        .set("z-index", "10000")
+                        .set("font-size", "14px")
+                        .set("text-align", "center");
+
+                ui.add(popup);
+                new java.util.Timer().schedule(new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        ui.access(() -> popup.removeFromParent());
+                    }
+                }, 3000);
+            };
+
+            if (forumName.isEmpty()) {
+                showPopup.accept("Please enter a forum name");
+                return;
+            }
+
+            Path baseForumDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum");
+            Path userFollowedForumsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Followed Forums");
+            Path userForumFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
+
+            try {
+                Path newForumPath = baseForumDir.resolve(forumName);
+                if (Files.exists(newForumPath)) {
+                    showPopup.accept("Forum already exists!");
+                    return;
+                }
+
+                Files.createDirectories(newForumPath);
+                Files.writeString(userForumFile, forumName, StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                Files.createDirectories(userFollowedForumsDir);
+                Path forumFollowFile = userFollowedForumsDir.resolve(forumName + ".txt");
+                Files.writeString(forumFollowFile, "", StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+                showPopup.accept("Forum '" + forumName + "' created and selected!");
+                forumNameField.clear();
+
+                // ✅ Update the button label here
+                openPopupButton.setText(forumName);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                showPopup.accept("Error creating forum: " + e.getMessage());
+            }
+        });
+
+
+// Vertical layout wrapper for alignment
+        VerticalLayout createForumLayout = new VerticalLayout(forumNameField, createForumButton);
+        createForumLayout.setPadding(false);
+        createForumLayout.setSpacing(false);
+        createForumLayout.setMargin(false);
+        createForumLayout.setWidthFull();
+        createForumLayout.getStyle()
+                .set("background-color", "#1a1a1b")
+                .set("padding", "0");
+
+        // Create dropdown for forum selection
+        Select<String> forumDropdown = new Select<>();
+        forumDropdown.setItems(getAllForumNames());
+        forumDropdown.setPlaceholder("Select a forum");
+        forumDropdown.setWidthFull();
+        forumDropdown.getStyle()
+                .set("margin", "10px 0")
+                .set("--lumo-size", "2px")  // Or even 28px for tighter height
+                .setWidth("165px")
+                .setHeight("38px")//
+                .set("font-size", "13px")
+                .set("line-height", "32px")
+                .set("border", "1px solid #444")
+                .set("border-radius", "4px")
+                .set("background-color", "#1a1a1b")
+                .set("color", "white")
+                .set("box-sizing", "border-box")
+                .set("text-align", "center");
+
+        Select<String> select = new Select<>();
+        select.setItems("Option 1", "Option 2", "Option 3");
+        select.setPlaceholder("Select a forum");
+
+// Set placeholder text color to dull white (gray)
+        select.getElement().getStyle().set("--lumo-secondary-text-color", "#ffffff");
+// Update selected forum on change
+        forumDropdown.addValueChangeListener(event -> {
+            String selectedForum = event.getValue();
+            if (selectedForum != null && !selectedForum.isEmpty()) {
+                try {
+                    UI.getCurrent().getPage().reload();
+
+                    Path userForumFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
+                    Files.writeString(userForumFile, selectedForum, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                    openPopupButton.setText(selectedForum);
+                    loadPosts();  // if you want to reload posts for the selected forum
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        Div dropdownWrapper = new Div(forumDropdown);
+        dropdownWrapper.getStyle()
+                .set("position", "relative")
+                .set("z-index", "10001");  // Raise stacking context
+
+        readCurrentForum(username);
+        Button subscribeButton = new Button("Subscribe to " + forumname);
+        subscribeButton.getStyle()
+                .set("margin", "12px")
+                .set("background-color", "#333")
+                .set("color", "white")
+                .set("border", "1px solid #444")
+                .set("border-radius", "4px");
+
+        subscribeButton.addClickListener(event -> {
+            try {
+
+                Path followedForumsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Followed Forums");
+                Files.createDirectories(followedForumsDir);  // Make sure the folder exists
+
+                Path forumFile = followedForumsDir.resolve(forumname + ".txt");
+                if (Files.exists(forumFile)) {
+                    Notification.show("Already subscribed to " + forumname);
+                } else {
+                    Files.writeString(forumFile, "", StandardOpenOption.CREATE_NEW);
+                    Notification.show("Subscribed to " + forumname);
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                Notification.show("Error subscribing to forum: " + e.getMessage());
+            }
+        });
+
+        Div spacer = new Div();
+        spacer.setHeightFull();  // takes remaining vertical space
+        sideBar.setFlexGrow(1, spacer);
+
+        Div spacer2 = new Div();
+        spacer.setHeightFull();  // takes remaining vertical space
+        sideBar.setFlexGrow(1, spacer);
+
+        Div spacer3 = new Div();
+        spacer.setHeightFull();  // takes remaining vertical space
+        sideBar.setFlexGrow(1, spacer);
+// Add all to sidebar
+        sideBar.add(
+                homeLayout,
+                popularLayout,
+                forYouLayout,
+                allLayout,
+                containerDiv,
+                dropdownWrapper,
+                containerDiv2,
+                openPopupButton,
+                pageSelectionPopup,
+                createTitle,
+                createForumLayout,
+                spacer,
+                subscribeButton,
+                spacer2,
+                spacer3
+        );
 
 // Toggle popup visibility on button click
         openPopupButton.addClickListener(event -> {
@@ -578,7 +808,7 @@ System.out.println("Hello World");
                             sortMode = 0;
                             loadPosts();
 
-                            openPopupButton.setText("Select a page ▼ (" + forumName + ")");
+                            openPopupButton.setText(forumName);
                             pageSelectionPopup.getStyle().set("display", "none");  // close popup
                         });
                         pageListLayout.add(forumButton);
@@ -1160,6 +1390,21 @@ System.out.println("Hello World");
             }
         }
         return null;
+    }
+    public static List<String> getAllForumNames() {
+        List<String> forumNames = new ArrayList<>();
+        Path forumDirectory = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum");
+
+        try (Stream<Path> paths = Files.list(forumDirectory)) {
+            forumNames = paths
+                    .filter(Files::isDirectory)
+                    .map(path -> path.getFileName().toString())
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace(); // Or handle as needed
+        }
+
+        return forumNames;
     }
 
 

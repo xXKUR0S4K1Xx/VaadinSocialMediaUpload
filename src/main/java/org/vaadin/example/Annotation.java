@@ -11,7 +11,7 @@ Follows.                    DONE
 Notifications.              NO
 Search users/threads        NO
 Whitemode/darkmode          ONLY DARK
-Subreddits                  NO
+Subreddits                  Yes
 
 
 How to make subreddits:

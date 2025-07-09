@@ -156,3 +156,33 @@ vaadin-text-area::part(textarea) {
 .popup-hover-item-active {
     background-color: rgba(255, 255, 255, 0.16) !important;
 }
+vaadin-select {
+  --lumo-primary-text-color: #ffffff;
+  --lumo-secondary-text-color: #ffffff;
+  --lumo-body-text-color: #ffffff;
+}
+
+vaadin-select::part(input-field),
+vaadin-select::part(text-field) {
+  background-color: transparent !important;
+  color: #ffffff !important;
+}
+
+vaadin-select::part(label) {
+  color: #ffffff;
+}
+
+vaadin-select::part(value) {
+  color: #ffffff;
+}
+
+vaadin-select::part(input-field):focus {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+vaadin-select:empty::part(label) {
+  color: #ffffff !important; /* dull white or gray */
+}
+vaadin-select::part(toggle-button) {
+  color: white;
+}
