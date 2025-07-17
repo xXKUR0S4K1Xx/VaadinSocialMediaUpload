@@ -6,6 +6,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
@@ -152,28 +153,35 @@ public class ProgrammierAufgaben extends VerticalLayout {
         add(mainLayout, centerButtonLayout, fibonacciLayout);
     }
 
-    private void startCounting(int targetNumber, Div numberDiv) {
-        isCounting = true;
-        currentNumber = 1;
+private void startCounting(int targetNumber, Div numberDiv) {
+    isCounting = true;
+    currentNumber = 1;
 
-        // Enable polling
-        UI.getCurrent().setPollInterval(500); // Poll every 500ms
+    UI ui = UI.getCurrent(); // Capture the UI reference once, for thread safety
 
-        new Thread(() -> {
-            while (currentNumber <= targetNumber) {
-                try {
-                    Thread.sleep(1000); // Simulate a delay
-                } catch (InterruptedException ignored) {
-                }
+    new Thread(() -> {
+        while (currentNumber <= targetNumber) {
+            int finalNumber = currentNumber;
 
-                int finalNumber = currentNumber;
-                getUI().ifPresent(ui -> ui.access(() -> numberDiv.setText("Current number: " + finalNumber)));
+            // Update the UI safely from this background thread
+            ui.access(() -> numberDiv.setText("Current number: " + finalNumber));
 
-                currentNumber++;
+            currentNumber++;
+
+            try {
+                Thread.sleep(1000); // Delay between updates (1 second)
+            } catch (InterruptedException ignored) {
             }
+        }
+
+        // Optional: update flag/UI once counting is complete
+        ui.access(() -> {
             isCounting = false;
-        }).start();
-    }
+            numberDiv.setText("Done!");
+        });
+
+    }).start();
+}
 
 
     private void generateRandomArray() {

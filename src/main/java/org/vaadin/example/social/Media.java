@@ -693,14 +693,21 @@ System.out.println("Hello World");
                 .set("position", "relative")
                 .set("z-index", "10001");  // Raise stacking context
 
+        Span buttonText = new Span();
+        buttonText.getElement().setProperty("innerHTML", "<div style='padding:8px 16px; line-height:1.3;'>Subscribe to<br>" + forumname + "</div>");
+
         readCurrentForum(username);
-        Button subscribeButton = new Button("Subscribe to " + forumname);
+        Button subscribeButton = new Button(buttonText);
         subscribeButton.getStyle()
                 .set("margin", "12px")
                 .set("background-color", "#333")
                 .set("color", "white")
                 .set("border", "1px solid #444")
-                .set("border-radius", "4px");
+                .set("border-radius", "4px")
+                .set("white-space", "normal") // allow wrapping
+                .set("word-break", "break-word") // break long words
+                .set("max-width", "200px") // still a max width to prevent layout breakage
+                .set("padding", "10px 16px");
 
         subscribeButton.addClickListener(event -> {
             try {
@@ -856,7 +863,7 @@ System.out.println("Hello World");
 
     }
 
-    private String getAvatarFilenameForUser(String username) {
+     String getAvatarFilenameForUser(String username) {
         Path avatarDir = Paths.get("users", username, "Avatar");
 
         if (Files.exists(avatarDir) && Files.isDirectory(avatarDir)) {

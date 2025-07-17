@@ -53,7 +53,8 @@ public class AvatarSelection extends VerticalLayout {
         setPadding(false);
         getStyle().set("background-color", "#1a1a1b");  // Baby blue background
         String username = getLoggedInUsername();
-
+        Media avatarService = new Media();
+        String avatarUrl = "/avatar/" + username + "/" + avatarService.getAvatarFilenameForUser(username);
 
 
         VerticalLayout popoverContent = new VerticalLayout();
@@ -61,12 +62,13 @@ public class AvatarSelection extends VerticalLayout {
                 .set("border-radius", "16px")  // Adjust the value as needed to round the corners
                 .set("overflow", "hidden"); // This clips the content to the rounded corners
 
+
         Avatar userAvatar2 = new Avatar(username);
+        userAvatar2.setImage(avatarUrl);
         userAvatar2.getStyle()
                 .set("background-color", "white")
                 .set("color", "black")
                 .set("border", "1px solid black");
-
 // Wrap avatar in RouterLink
         RouterLink avatarLink = new RouterLink();
         avatarLink.setRoute(UserPage.class); // replace with actual class
@@ -121,13 +123,14 @@ public class AvatarSelection extends VerticalLayout {
         popoverContent.add(secondAvatarLayout, backToMediaButton, logoutButton);
 
         Avatar userAvatar = new Avatar(username);
+
         userAvatar.getStyle()
                 .set("background-color", "white")  //White background
                 .set("color", "black")  // black text
                 .set("border", "1px solid, black");  // white border
         // Create the popover once outside the click event
         Popover popover = new Popover();
-        popover.setTarget(userAvatar);
+        popover.setTarget(userAvatar2);
         popover.setPosition(PopoverPosition.BOTTOM);
         popover.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
         popover.add(popoverContent);  // Add content to the popover only once
@@ -236,7 +239,7 @@ public class AvatarSelection extends VerticalLayout {
         centerLayout.setWidthFull();
         centerLayout.getStyle().set("color", "#333");  // Text color stays dark grey
 
-        HorizontalLayout rightLayout = new HorizontalLayout(notificationBell, userAvatar);
+        HorizontalLayout rightLayout = new HorizontalLayout(notificationBell, userAvatar2);
         rightLayout.setJustifyContentMode(JustifyContentMode.END);
         rightLayout.setAlignItems(Alignment.CENTER);
         rightLayout.setWidthFull();

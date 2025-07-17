@@ -60,8 +60,10 @@ public class UserPage extends VerticalLayout {
         setPadding(false);
         getStyle().set("background-color", "#1a1a1b");
 
-        String username = "";
-        String avatarUrl = "";
+        String username = getLoggedInUsername();
+
+        Media avatarService = new Media();
+        String avatarUrl = "/avatar/" + username + "/" + avatarService.getAvatarFilenameForUser(username);
 
         try {
             selectedUsername = Files.readString(Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/selecteduser.txt")).trim();
