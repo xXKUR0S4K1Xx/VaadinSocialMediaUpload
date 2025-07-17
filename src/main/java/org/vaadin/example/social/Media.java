@@ -704,6 +704,7 @@ System.out.println("Hello World");
                 .set("color", "white")
                 .set("border", "1px solid #444")
                 .set("border-radius", "4px")
+                .set("height", "60px")            // ⬅️ increases vertical size
                 .set("white-space", "normal") // allow wrapping
                 .set("word-break", "break-word") // break long words
                 .set("max-width", "200px") // still a max width to prevent layout breakage
