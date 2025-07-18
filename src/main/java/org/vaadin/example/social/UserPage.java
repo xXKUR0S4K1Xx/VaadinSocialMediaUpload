@@ -1,8 +1,10 @@
 package org.vaadin.example.social;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.contextmenu.ContextMenu;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;
@@ -189,10 +191,92 @@ public class UserPage extends VerticalLayout {
             }
         });
 
+        UserPost userPost = new UserPost(); // Instance for calling non-static methods
+
         Icon notificationBell = new Icon(VaadinIcon.BELL);
-        notificationBell.getElement().getStyle()
-                .set("color", "#fff")
-                .set("font-size", "24px");
+        notificationBell.setSize("24px");
+
+// === Notification Count Overlay ===
+        Span notificationCount = new Span(); // Will be updated below
+        try {
+            Path notifPath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "NotificationNumber");
+
+            if (Files.exists(notifPath)) {
+                String count = Files.readString(notifPath).trim();
+                notificationCount.setText(count.isEmpty() ? "0" : count);
+            } else {
+                notificationCount.setText("0");
+            }
+        } catch (IOException e) {
+            notificationCount.setText("0");
+            e.printStackTrace();
+        }
+
+        notificationCount.getElement().getStyle()
+                .set("position", "absolute")
+                .set("top", "-5px")
+                .set("right", "-5px")
+                .set("background-color", "red")
+                .set("color", "white")
+                .set("border-radius", "50%")
+                .set("padding", "2px 6px")
+                .set("font-size", "10px")
+                .set("min-width", "18px")
+                .set("height", "18px")
+                .set("display", "flex")
+                .set("align-items", "center")
+                .set("justify-content", "center")
+                .set("z-index", "5");
+
+// === Bell as button to trigger dropdown ===
+        Button notificationButton = new Button(notificationBell);
+        notificationButton.addClassName("notification-bell");
+        notificationButton.getStyle()
+                .set("position", "relative")
+                .set("padding", "0")
+                .set("border", "none")
+                .set("background", "none");
+
+// === Wrap bell and count together ===
+        Div bellWrapper = new Div(notificationButton, notificationCount);
+        bellWrapper.getStyle().set("position", "relative").set("width", "fit-content");
+
+// === Dropdown on bell click ===
+        ContextMenu notificationMenu = new ContextMenu(notificationButton);
+        notificationMenu.getElement().getStyle()
+                .set("background-color", "#f9f9f9"); // Dull white background
+        notificationMenu.setOpenOnClick(true);
+
+// === Add notification preview items ===
+        List<String> previews = userPost.getNotificationPreviews(); // Instance method
+        for (String preview : previews) {
+            notificationMenu.addItem(preview, click -> {
+                userPost.deleteNotificationByPreview(preview);
+                userPost.renumberNotifications();
+                userPost.updateNotificationNumber();
+                UI.getCurrent().navigate("media");
+            });
+        }
+
+// === Set count from UserPost ===
+        userPost.updateNotificationNumber(); // refresh count before reading
+        Path notifCountFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                User.getCurrentUser().getUsername(), "NotificationNumber");
+        String count = "0";
+        try {
+            if (Files.exists(notifCountFile)) {
+                count = Files.readString(notifCountFile);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        notificationCount.setText(count);
+
+
+        Div wrapper = new Div();
+        wrapper.getStyle()
+                .set("position", "relative")
+                .set("display", "inline-block"); // Needed to align the dropdown under the field
 
         TextField searchField = new TextField();
         searchField.setPlaceholder("Search Semaino");
@@ -257,7 +341,7 @@ public class UserPage extends VerticalLayout {
         centerLayout.getStyle().set("color", "#ffffff");
 
 // Right layout with notification bell and avatar (make sure they are defined)
-        HorizontalLayout rightLayout = new HorizontalLayout(notificationBell, userAvatar2);
+        HorizontalLayout rightLayout = new HorizontalLayout(bellWrapper, userAvatar2);
         rightLayout.setJustifyContentMode(JustifyContentMode.END);
         rightLayout.setAlignItems(Alignment.CENTER);
         rightLayout.setWidthFull();
