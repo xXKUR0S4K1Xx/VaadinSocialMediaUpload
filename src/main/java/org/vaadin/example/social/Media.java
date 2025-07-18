@@ -1,4 +1,5 @@
 package org.vaadin.example.social;
+import com.vaadin.flow.component.contextmenu.ContextMenu;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -198,11 +199,27 @@ public class Media extends VerticalLayout {
         });
 System.out.println("Hello World");
 
+        UserPost userPost = new UserPost(); // Instance for calling non-static methods
+
         Icon notificationBell = new Icon(VaadinIcon.BELL);
         notificationBell.setSize("24px");
 
 // === Notification Count Overlay ===
-        Span notificationCount = new Span();
+        Span notificationCount = new Span(); // Will be updated below
+        try {
+            Path notifPath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "NotificationNumber");
+
+            if (Files.exists(notifPath)) {
+                String count = Files.readString(notifPath).trim();
+                notificationCount.setText(count.isEmpty() ? "0" : count);
+            } else {
+                notificationCount.setText("0");
+            }
+        } catch (IOException e) {
+            notificationCount.setText("0");
+            e.printStackTrace();
+        }
+
         notificationCount.getElement().getStyle()
                 .set("position", "absolute")
                 .set("top", "-5px")
@@ -219,13 +236,37 @@ System.out.println("Hello World");
                 .set("justify-content", "center")
                 .set("z-index", "5");
 
+// === Bell as button to trigger dropdown ===
+        Button notificationButton = new Button(notificationBell);
+        notificationButton.addClassName("notification-bell");
+        notificationButton.getStyle()
+                .set("position", "relative")
+                .set("padding", "0")
+                .set("border", "none")
+                .set("background", "none");
+
 // === Wrap bell and count together ===
-        Div bellWrapper = new Div();
+        Div bellWrapper = new Div(notificationButton, notificationCount);
         bellWrapper.getStyle().set("position", "relative").set("width", "fit-content");
-        bellWrapper.add(notificationBell, notificationCount);
+
+// === Dropdown on bell click ===
+        ContextMenu notificationMenu = new ContextMenu(notificationButton);
+        notificationMenu.getElement().getStyle()
+                .set("background-color", "#f9f9f9"); // Dull white background
+        notificationMenu.setOpenOnClick(true);
+
+// === Add notification preview items ===
+        List<String> previews = userPost.getNotificationPreviews(); // Instance method
+        for (String preview : previews) {
+            notificationMenu.addItem(preview, click -> {
+                userPost.deleteNotificationByPreview(preview);
+                userPost.renumberNotifications();
+                userPost.updateNotificationNumber();
+                UI.getCurrent().navigate("media");
+            });
+        }
 
 // === Set count from UserPost ===
-        UserPost userPost = new UserPost(); // your new non-static instance
         userPost.updateNotificationNumber(); // refresh count before reading
         Path notifCountFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
                 User.getCurrentUser().getUsername(), "NotificationNumber");
