@@ -13,6 +13,26 @@ Search users/threads        NO
 Whitemode/darkmode          ONLY DARK
 Subreddits                  Yes
 
+Notifications:
+Commenter side:
+Make replycomment
+Go into folder of the user you made a comment in
+Find Notifications folder (don't forget to create them for each user on profile creation)
+check the numbers of text files in there
+Add text file name 1,2,3 and so on (the newest)
+the content of the text file is the parent content
+
+Commentee side:
+check notifications folder
+for every textfile increase notification variable by 1
+add the number of notifications as a div on the bell
+if clicked on open a dropdown that contains all comments (first 20 letters or so, maybe 50 px)
+if clicked on open a site with the exact comment (maybe userpage and sort by notifications in new list?)
+after it was clicked remove the text file
+go trhough each file in notifications folder and rename them in order
+
+
+
 
 How to make subreddits:
     - check which subreddit you are on via: .txt file in User
