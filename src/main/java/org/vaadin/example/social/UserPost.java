@@ -471,7 +471,14 @@ public class UserPost {
 
         // Save the new reply post
         saveNewPost(newReply, true); // true means it is a reply, so no post count increment
+
+        // --- ADD NOTIFICATION HERE ---
+        // Notify the user who owns the parent post about the new reply, if different from current user
+        if (!currentUserName.equals(parentPost.getUserName())) {
+            UserPost.createNotificationForUser(parentPost.getUserName(), replyContent);
+        }
     }
+
 
     // Speichert einen neuen Post oder Reply als Datei.
     public static void saveNewPost(Post newPost, boolean isReply) {
@@ -849,4 +856,38 @@ public class UserPost {
             e.printStackTrace();
         }
     }
+    public static void createNotificationForUser(String recipientUsername, String content) {
+        try {
+            Path userNotifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    recipientUsername, "Notifications");
+
+            if (!Files.exists(userNotifDir)) {
+                Files.createDirectories(userNotifDir);
+            }
+
+            // Count current notifications (1-based numbering)
+            int fileCount = (int) Files.list(userNotifDir)
+                    .filter(p -> p.getFileName().toString().endsWith(".txt"))
+                    .count();
+
+            int nextNumber = fileCount + 1;
+
+            // Trim content to a short preview
+            String preview = content.length() > 20 ? content.substring(0, 20) + "..." : content;
+
+            // Write new notification file
+            Path notifFile = userNotifDir.resolve(nextNumber + ".txt");
+            Files.writeString(notifFile, preview);
+
+            // Update NotificationNumber file
+            Path notifCountFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    recipientUsername, "NotificationNumber");
+
+            Files.writeString(notifCountFile, String.valueOf(nextNumber), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }

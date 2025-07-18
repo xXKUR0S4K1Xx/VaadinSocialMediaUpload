@@ -199,9 +199,46 @@ public class Media extends VerticalLayout {
 System.out.println("Hello World");
 
         Icon notificationBell = new Icon(VaadinIcon.BELL);
-        notificationBell.getElement().getStyle()
-                .set("color", "#fff")  // Make the bell white for contrast
-                .set("font-size", "24px");  // Adjust the size of the bell if needed
+        notificationBell.setSize("24px");
+
+// === Notification Count Overlay ===
+        Span notificationCount = new Span();
+        notificationCount.getElement().getStyle()
+                .set("position", "absolute")
+                .set("top", "-5px")
+                .set("right", "-5px")
+                .set("background-color", "red")
+                .set("color", "white")
+                .set("border-radius", "50%")
+                .set("padding", "2px 6px")
+                .set("font-size", "10px")
+                .set("min-width", "18px")
+                .set("height", "18px")
+                .set("display", "flex")
+                .set("align-items", "center")
+                .set("justify-content", "center")
+                .set("z-index", "5");
+
+// === Wrap bell and count together ===
+        Div bellWrapper = new Div();
+        bellWrapper.getStyle().set("position", "relative").set("width", "fit-content");
+        bellWrapper.add(notificationBell, notificationCount);
+
+// === Set count from UserPost ===
+        UserPost userPost = new UserPost(); // your new non-static instance
+        userPost.updateNotificationNumber(); // refresh count before reading
+        Path notifCountFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                User.getCurrentUser().getUsername(), "NotificationNumber");
+        String count = "0";
+        try {
+            if (Files.exists(notifCountFile)) {
+                count = Files.readString(notifCountFile);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        notificationCount.setText(count);
+
 
         Div wrapper = new Div();
         wrapper.getStyle()
@@ -329,7 +366,7 @@ System.out.println("Hello World");
         centerLayout.setWidthFull();
         centerLayout.getStyle().set("color", "#333");  // Text color stays dark grey
 
-        HorizontalLayout rightLayout = new HorizontalLayout(notificationBell, userAvatar2);
+        HorizontalLayout rightLayout = new HorizontalLayout(bellWrapper, userAvatar2);
         rightLayout.setJustifyContentMode(JustifyContentMode.END);
         rightLayout.setAlignItems(Alignment.CENTER);
         rightLayout.setWidthFull();
