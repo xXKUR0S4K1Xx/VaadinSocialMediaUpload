@@ -56,6 +56,7 @@ public class Media extends VerticalLayout {
     private VirtualList<Object> postList;
     private List<Post> allPosts;
     private Button sortButton;
+    private int notification = 0;
 
 
 

@@ -169,7 +169,10 @@ public class Login extends VerticalLayout {
                     if (!Files.exists(followedForumsDir)) {
                         Files.createDirectories(followedForumsDir);
                     }
-
+                    Path notificationsDir = userDir.resolve("Notifications");
+                    if (!Files.exists(notificationsDir)) {
+                        Files.createDirectories(notificationsDir);
+                    }
                     Path allFile = followedForumsDir.resolve("all");
                     if (!Files.exists(allFile)) {
                         Files.writeString(allFile, "all", StandardCharsets.UTF_8);

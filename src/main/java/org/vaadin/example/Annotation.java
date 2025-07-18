@@ -15,17 +15,22 @@ Subreddits                  Yes
 
 Notifications:
 Commenter side:
-Make replycomment
-Go into folder of the user you made a comment in
-Find Notifications folder (don't forget to create them for each user on profile creation)
+if a user has made a reply
+Go into folder of the user you made a comment in (check the forum first with the variable initialised already: String forumname = readCurrentForum(username);)
+    - example path: C:\Users\sdachs\IdeaProjects\VaadinSocialMediaUpload\Forum\all
+Find Notifications folder (don't forget to create them for each user on profile creation. DONE)
+    - example path ("a" is a user): C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users/a/Notifications
 check the numbers of text files in there
 Add text file name 1,2,3 and so on (the newest)
 the content of the text file is the parent content
 
 Commentee side:
 check notifications folder
-for every textfile increase notification variable by 1
+    - example path: - example path ("a" is a user): C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users/a/Notifications
+add one to variable notificationNumber for each file
+replace number in File NotificationNumber with the one in the variable (example path where "a" is a user: C:\Users\sdachs\IdeaProjects\VaadinSocialMediaUpload/users\a\NotificationNumber
 add the number of notifications as a div on the bell
+    -CARE the bell is currently an icon. Maybe create a see-through overlay with a number
 if clicked on open a dropdown that contains all comments (first 20 letters or so, maybe 50 px)
 if clicked on open a site with the exact comment (maybe userpage and sort by notifications in new list?)
 after it was clicked remove the text file
