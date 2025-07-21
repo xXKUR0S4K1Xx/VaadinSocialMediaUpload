@@ -48,8 +48,6 @@ import org.slf4j.LoggerFactory;
 @Route("media")  // Defines the route for this view. When navigating to '/media', this view is displayed.
 public class Media extends VerticalLayout {
 
-    private static final Logger log = LoggerFactory.getLogger(Media.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
-
     private Button sortNewButton;
     private Button sortTopButton;
     private HorizontalLayout middleBar;
@@ -202,39 +200,39 @@ System.out.println("Hello World");
         UserPost userPost = new UserPost(); // Instance for calling non-static methods
 
         Icon notificationBell = new Icon(VaadinIcon.BELL);
-        notificationBell.setSize("24px");
+        notificationBell.setSize("30px");
+        notificationBell.getElement().getStyle().set("color", "white");
 
 // === Notification Count Overlay ===
-        Span notificationCount = new Span(); // Will be updated below
+        Span notificationCount = new Span(); // Will be added conditionally
+        int notifNumber = 0;
+
         try {
             Path notifPath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "NotificationNumber");
 
             if (Files.exists(notifPath)) {
-                String count = Files.readString(notifPath).trim();
-                notificationCount.setText(count.isEmpty() ? "0" : count);
-            } else {
-                notificationCount.setText("0");
+                String countStr = Files.readString(notifPath).trim();
+                notifNumber = countStr.isEmpty() ? 0 : Integer.parseInt(countStr);
             }
-        } catch (IOException e) {
-            notificationCount.setText("0");
+        } catch (IOException | NumberFormatException e) {
             e.printStackTrace();
         }
 
+        notificationCount.setText(String.valueOf(notifNumber));
         notificationCount.getElement().getStyle()
                 .set("position", "absolute")
-                .set("top", "-5px")
-                .set("right", "-5px")
+                .set("top", "1px")
+                .set("right", "-13px")
                 .set("background-color", "red")
                 .set("color", "white")
-                .set("border-radius", "50%")
+                .set("border-radius", "45%")
                 .set("padding", "2px 6px")
                 .set("font-size", "10px")
                 .set("min-width", "18px")
                 .set("height", "18px")
                 .set("display", "flex")
                 .set("align-items", "center")
-                .set("justify-content", "center")
-                .set("z-index", "5");
+                .set("justify-content", "center");
 
 // === Bell as button to trigger dropdown ===
         Button notificationButton = new Button(notificationBell);
@@ -246,13 +244,18 @@ System.out.println("Hello World");
                 .set("background", "none");
 
 // === Wrap bell and count together ===
-        Div bellWrapper = new Div(notificationButton, notificationCount);
+        Div bellWrapper = new Div();
+        bellWrapper.add(notificationButton);
+        if (notifNumber > 0) {
+            bellWrapper.add(notificationCount); // only add count if > 0
+        }
         bellWrapper.getStyle().set("position", "relative").set("width", "fit-content");
 
 // === Dropdown on bell click ===
         ContextMenu notificationMenu = new ContextMenu(notificationButton);
+        notificationMenu.getElement().setAttribute("theme", "notification");
         notificationMenu.getElement().getStyle()
-                .set("background-color", "#f9f9f9"); // Dull white background
+                .set("background-color", "#000000"); // Dull white background
         notificationMenu.setOpenOnClick(true);
 
 // === Add notification preview items ===
@@ -844,7 +847,10 @@ System.out.println("Hello World");
                 .set("white-space", "normal") // allow wrapping
                 .set("word-break", "break-word") // break long words
                 .set("max-width", "200px") // still a max width to prevent layout breakage
-                .set("padding", "10px 16px");
+                .set("padding", "10px 16px")
+                .set("outline", "none")
+                .set("box-shadow", "none");
+
 
         subscribeButton.addClickListener(event -> {
             try {
