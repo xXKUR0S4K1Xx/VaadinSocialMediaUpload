@@ -13,10 +13,9 @@ import com.vaadin.flow.router.Route;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Route("userpost")
@@ -475,7 +474,7 @@ public class UserPost {
         // --- ADD NOTIFICATION HERE ---
         // Notify the user who owns the parent post about the new reply, if different from current user
         if (!currentUserName.equals(parentPost.getUserName())) {
-            UserPost.createNotificationForUser(parentPost.getUserName(), replyContent);
+            UserPost.createNotificationForUser(parentPost.getUserName(), currentUserName);
         }
     }
 
@@ -748,25 +747,6 @@ public class UserPost {
         simulatePlaceholder(area, placeholderText);
         // Optionally you can add more styling or logic here using inputColor
     }
-    public void addNotification(String previewText) {
-        try {
-            String username = User.getCurrentUser().getUsername();
-            Path notifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "notifications");
-
-            if (!Files.exists(notifDir)) {
-                Files.createDirectories(notifDir);
-            }
-
-            long count = Files.list(notifDir)
-                    .filter(p -> p.getFileName().toString().endsWith(".txt"))
-                    .count();
-
-            Path newFile = notifDir.resolve((count + 1) + ".txt");
-            Files.writeString(newFile, previewText, StandardOpenOption.CREATE);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public void updateNotificationNumber() {
         try {
@@ -784,57 +764,75 @@ public class UserPost {
         }
     }
 
-    public List<String> getNotificationPreviews() {
-        try {
-            String username = User.getCurrentUser().getUsername();
-            Path notifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "notifications");
+    private static List<String> filenames = new ArrayList<>();
 
-            if (!Files.exists(notifDir)) return List.of();
+    public static List<String> getNotificationPreviews(String username) {
+        List<String> previews = new ArrayList<>();
+        filenames.clear();
 
-            return Files.list(notifDir)
+        Path notifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Notifications");
+
+        if (!Files.exists(notifDir)) {
+            return previews;
+        }
+
+        try (Stream<Path> paths = Files.list(notifDir)) {
+            List<Path> notifFiles = paths
                     .filter(p -> p.getFileName().toString().endsWith(".txt"))
-                    .sorted()
-                    .map(path -> {
-                        try {
-                            return Files.readString(path);
-                        } catch (IOException e) {
-                            return "";
-                        }
-                    }).toList();
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString().replace(".txt", "")))
+                    .toList();
+
+            for (Path notifFile : notifFiles) {
+                filenames.add(notifFile.getFileName().toString()); // Store for deletion
+
+                String preview = "No content";
+                try {
+                    List<String> lines = Files.readAllLines(notifFile);
+                    if (!lines.isEmpty()) {
+                        String fullPostLine = lines.get(0).trim();
+                        String[] parts = fullPostLine.split("#");
+                        String content = parts.length > 4 ? parts[4] : "No content";
+
+                        String[] words = content.split("\\s+");
+                        preview = String.join(" ", Arrays.copyOfRange(words, 0, Math.min(40, words.length)));
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                previews.add(preview);
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
-            return List.of();
         }
+
+        return previews;
     }
 
-    public void deleteNotificationByPreview(String preview) {
+
+    /**
+     * Deletes notification file by filename for the current user.
+     */
+    public void deleteNotificationByFilename(String filename) {
         try {
             String username = User.getCurrentUser().getUsername();
             Path notifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "notifications");
 
-            Files.list(notifDir)
-                    .filter(p -> {
-                        try {
-                            return Files.readString(p).equals(preview);
-                        } catch (IOException e) {
-                            return false;
-                        }
-                    })
-                    .findFirst()
-                    .ifPresent(path -> {
-                        try {
-                            Files.delete(path);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    });
-
+            Path notifFile = notifDir.resolve(filename);
+            if (Files.exists(notifFile)) {
+                Files.delete(notifFile);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
+    public static List<String> getNotificationFilenames() {
+        return filenames;
+    }
+    /**
+     * Renumbers all notification files sequentially (1.txt, 2.txt, ...).
+     */
     public void renumberNotifications() {
         try {
             String username = User.getCurrentUser().getUsername();
@@ -851,43 +849,86 @@ public class UserPost {
                 Files.move(file, newPath, StandardCopyOption.REPLACE_EXISTING);
                 index++;
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    public static void createNotificationForUser(String recipientUsername, String content) {
-        try {
-            Path userNotifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
-                    recipientUsername, "Notifications");
 
-            if (!Files.exists(userNotifDir)) {
-                Files.createDirectories(userNotifDir);
+    /**
+     * Creates a notification for recipientUsername by writing a new text file
+     * containing the path to the sender’s last post.
+     *
+     /**
+     * Creates a notification for recipientUsername by reading the full post line from senderUsername's post with given postId,
+     * then writing a notification file containing that full post line.
+     *
+     * @param recipientUsername the user receiving the notification
+     * @param senderUsername the user who wrote the post
+     */
+    public static void createNotificationForUser(String recipientUsername, String senderUsername) {
+        try {
+            System.out.println("=== DEBUG: Starting createNotificationForUser ===");
+            System.out.println("Recipient: " + recipientUsername);
+            System.out.println("Sender: " + senderUsername);
+
+            Path senderPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    senderUsername, "Posts");
+
+            if (!Files.exists(senderPostsDir)) {
+                System.err.println("Sender posts directory does not exist: " + senderPostsDir);
+                return;
             }
 
-            // Count current notifications (1-based numbering)
-            int fileCount = (int) Files.list(userNotifDir)
+            // Find latest post file from sender
+            Optional<Path> lastPostFile = Files.list(senderPostsDir)
+                    .filter(p -> p.getFileName().toString().matches("\\d+"))
+                    .sorted(Comparator.comparingInt(p -> Integer.parseInt(p.getFileName().toString())))
+                    .reduce((first, second) -> second); // get last file
+
+            if (lastPostFile.isEmpty()) {
+                System.err.println("No posts found for sender: " + senderUsername);
+                return;
+            }
+
+            String fullPostLine = Files.readString(lastPostFile.get()).trim();
+            System.out.println("Found sender's last post: " + fullPostLine);
+
+            // Determine recipient's next post number (count + 1)
+            Path recipientPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    recipientUsername, "Posts");
+
+            long recipientPostCount = Files.exists(recipientPostsDir)
+                    ? Files.list(recipientPostsDir).filter(p -> p.getFileName().toString().matches("\\d+")).count()
+                    : 0;
+
+            long recipientNextPostNumber = recipientPostCount + 1;
+            System.out.println("Recipient's next post number: " + recipientNextPostNumber);
+
+            // Write notification
+            Path recipientNotifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    recipientUsername, "Notifications");
+            if (!Files.exists(recipientNotifDir)) {
+                Files.createDirectories(recipientNotifDir);
+            }
+
+            int notifFileNumber = (int) Files.list(recipientNotifDir)
                     .filter(p -> p.getFileName().toString().endsWith(".txt"))
-                    .count();
+                    .count() + 1;
 
-            int nextNumber = fileCount + 1;
+            Path notifFile = recipientNotifDir.resolve(notifFileNumber + ".txt");
+            List<String> lines = List.of(fullPostLine, String.valueOf(recipientNextPostNumber));
+            Files.write(notifFile, lines);
 
-            // Trim content to a short preview
-            String preview = content.length() > 20 ? content.substring(0, 20) + "..." : content;
+            // Update NotificationNumber
+            Path notifCountFile = recipientNotifDir.resolveSibling("NotificationNumber");
+            Files.writeString(notifCountFile, String.valueOf(notifFileNumber),
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-            // Write new notification file
-            Path notifFile = userNotifDir.resolve(nextNumber + ".txt");
-            Files.writeString(notifFile, preview);
-
-            // Update NotificationNumber file
-            Path notifCountFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
-                    recipientUsername, "NotificationNumber");
-
-            Files.writeString(notifCountFile, String.valueOf(nextNumber), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            System.out.println("Notification file created: " + notifFile);
+            System.out.println("=== DEBUG: End createNotificationForUser ===");
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
 }

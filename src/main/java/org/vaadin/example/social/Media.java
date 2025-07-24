@@ -258,17 +258,20 @@ System.out.println("Hello World");
                 .set("background-color", "#000000"); // Dull white background
         notificationMenu.setOpenOnClick(true);
 
-// === Add notification preview items ===
-        List<String> previews = userPost.getNotificationPreviews(); // Instance method
-        for (String preview : previews) {
+        List<String> previews = userPost.getNotificationPreviews(getLoggedInUsername());
+        List<String> filenames = userPost.getNotificationFilenames();
+
+        for (int i = 0; i < previews.size(); i++) {
+            String preview = previews.get(i);
+            String filename = filenames.get(i);
+
             notificationMenu.addItem(preview, click -> {
-                userPost.deleteNotificationByPreview(preview);
+                userPost.deleteNotificationByFilename(filename);
                 userPost.renumberNotifications();
                 userPost.updateNotificationNumber();
                 UI.getCurrent().navigate("media");
             });
         }
-
 // === Set count from UserPost ===
         userPost.updateNotificationNumber(); // refresh count before reading
         Path notifCountFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",

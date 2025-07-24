@@ -248,10 +248,10 @@ public class UserPage extends VerticalLayout {
         notificationMenu.setOpenOnClick(true);
 
 // === Add notification preview items ===
-        List<String> previews = userPost.getNotificationPreviews(); // Instance method
+        List<String> previews = userPost.getNotificationPreviews(getLoggedInUsername()); // Instance method
         for (String preview : previews) {
             notificationMenu.addItem(preview, click -> {
-                userPost.deleteNotificationByPreview(preview);
+                userPost.deleteNotificationByFilename(preview);
                 userPost.renumberNotifications();
                 userPost.updateNotificationNumber();
                 UI.getCurrent().navigate("media");
