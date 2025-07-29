@@ -4,14 +4,21 @@ public class Annotation {
 }
 /*
 
+Fixed notifications.
+fixed gui
+fixed screen scrolling
+
+next is? idk
+the entire media shenanigans are still missing in userpage so maybe that i guess?
+
 Next objectives:
 Status der user.            DONE
 popup mit status der user.  NO
 Follows.                    DONE
-Notifications.              NO
+Notifications.              DONE
 Search users/threads        NO
 Whitemode/darkmode          ONLY DARK
-Subreddits                  Yes
+Subreddits                  DONE
 
 Notifications:
 Commenter side:

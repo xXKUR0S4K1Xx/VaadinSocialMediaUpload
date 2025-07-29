@@ -893,16 +893,9 @@ public class UserPost {
             String fullPostLine = Files.readString(lastPostFile.get()).trim();
             System.out.println("Found sender's last post: " + fullPostLine);
 
-            // Determine recipient's next post number (count + 1)
-            Path recipientPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
-                    recipientUsername, "Posts");
-
-            long recipientPostCount = Files.exists(recipientPostsDir)
-                    ? Files.list(recipientPostsDir).filter(p -> p.getFileName().toString().matches("\\d+")).count()
-                    : 0;
-
-            long recipientNextPostNumber = recipientPostCount + 1;
-            System.out.println("Recipient's next post number: " + recipientNextPostNumber);
+            // Get sender's post number (from file name)
+            int senderPostNumber = Integer.parseInt(lastPostFile.get().getFileName().toString());
+            System.out.println("Sender's latest post number: " + senderPostNumber);
 
             // Write notification
             Path recipientNotifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
@@ -916,7 +909,7 @@ public class UserPost {
                     .count() + 1;
 
             Path notifFile = recipientNotifDir.resolve(notifFileNumber + ".txt");
-            List<String> lines = List.of(fullPostLine, String.valueOf(recipientNextPostNumber));
+            List<String> lines = List.of(fullPostLine, String.valueOf(senderPostNumber));
             Files.write(notifFile, lines);
 
             // Update NotificationNumber
@@ -931,4 +924,6 @@ public class UserPost {
             e.printStackTrace();
         }
     }
+
+
 }

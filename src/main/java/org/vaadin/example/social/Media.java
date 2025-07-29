@@ -1,5 +1,6 @@
 package org.vaadin.example.social;
 import com.vaadin.flow.component.contextmenu.ContextMenu;
+import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -266,7 +267,10 @@ System.out.println("Hello World");
             String filename = filenames.get(i);
 
             notificationMenu.addItem(preview, click -> {
-                userPost.deleteNotificationByFilename(filename);
+                Path notifPath = Paths.get("users", getLoggedInUsername(), "Notifications", "1.txt");
+                loadPostFromNotification(notifPath);
+
+                userPost.deleteNotificationByFilename(filename);  // <-- fixed
                 userPost.renumberNotifications();
                 userPost.updateNotificationNumber();
                 UI.getCurrent().navigate("media");
@@ -373,8 +377,11 @@ System.out.println("Hello World");
         wrapper.add(searchField, dropdown);
 
         // Fancy "Communo" title
-        RouterLink clickableTitle = new RouterLink("Semaino", Media.class);
-        clickableTitle.getStyle()
+        Span clickableTitle = new Span("Semaino");
+        clickableTitle.addClickListener(e -> {
+            loadPosts(); // your method
+            UI.getCurrent().navigate(Media.class); // manually navigate
+        });        clickableTitle.getStyle()
                 .set("font-family", "'Segoe Script', cursive")
                 .set("font-size", "28px")
                 .set("font-weight", "bold")
@@ -641,19 +648,27 @@ System.out.println("Hello World");
                 .set("margin-top", "20px")
                 .set("font-weight", "bold")
                 .set("color", "white");
-// Popup Div
+
         Div pageSelectionPopup = new Div();
         pageSelectionPopup.getStyle()
-                .set("background-color", "#1a1a1b")
-                .set("color", "white")
+                .set("background-color", "#282b30")
+                .set("color", "#e0e0e0")
                 .set("border", "1px solid #444")
                 .set("border-radius", "4px")
                 .set("padding", "10px")
                 .set("margin-top", "4px")
                 .set("width", "100%")
-                .set("box-sizing", "border-box") // ← fixes horizontal overflow
+                .set("box-sizing", "border-box")
                 .set("display", "none")
-                .set("z-index", "10");
+                .set("z-index", "11")
+                .set("max-height", "300px")      // 4 items * 40px (or adjust to your item height)
+                .set("overflow-y", "auto");      // Scroll only vertically when content exceeds height
+
+        Div popupWrapper = new Div();
+        popupWrapper.getStyle()
+                .set("position", "relative")    // Relative positioning context
+                .set("width", "100%");          // Match the full width of the trigger area
+        popupWrapper.add(pageSelectionPopup);
 
 // Title for selecting forum
         H4 dialogTitle = new H4("Select a forum");
@@ -793,20 +808,21 @@ System.out.println("Hello World");
         Select<String> forumDropdown = new Select<>();
         forumDropdown.setItems(getAllForumNames());
         forumDropdown.setPlaceholder("Select a forum");
-        forumDropdown.setWidthFull();
+        forumDropdown.setWidth("165px");
         forumDropdown.getStyle()
-                .set("margin", "10px 0")
-                .set("--lumo-size", "2px")  // Or even 28px for tighter height
-                .setWidth("165px")
-                .setHeight("38px")//
-                .set("font-size", "13px")
-                .set("line-height", "32px")
+                .set("height", "42px")                // Bigger container box
+                .set("--lumo-size", "42px")           // Vaadin internal sizing
+                .set("font-size", "12px")             // Keep text readable
+                .set("line-height", "36px")           // Vertically center text
+                .set("padding", "0 8px")              // Horizontal padding
                 .set("border", "1px solid #444")
                 .set("border-radius", "4px")
                 .set("background-color", "#1a1a1b")
                 .set("color", "white")
                 .set("box-sizing", "border-box")
-                .set("text-align", "center");
+                .set("text-align", "center")
+                .set("margin", "10px 0");
+
 
         Select<String> select = new Select<>();
         select.setItems("Option 1", "Option 2", "Option 3");
@@ -896,7 +912,7 @@ System.out.println("Hello World");
                 dropdownWrapper,
                 containerDiv2,
                 openPopupButton,
-                pageSelectionPopup,
+                popupWrapper,
                 createTitle,
                 createForumLayout,
                 spacer,
@@ -1559,6 +1575,61 @@ System.out.println("Hello World");
 
         return forumNames;
     }
+    public void loadPostFromNotification(Path notificationFilePath) {
+        try {
+            // Step 1: Read notification content
+            List<String> lines = Files.readAllLines(notificationFilePath);
+            if (lines.size() < 2) {
+                System.err.println("Invalid notification file format.");
+                return;
+            }
+
+            // Step 2: Parse the post from line 1
+            String postDataLine = lines.get(0).trim();
+            Post referencedPost = Post.fromString(postDataLine);
+
+            // Step 3: Extract sender's username
+            String senderUsername = referencedPost.getUserName();
+
+            // Step 4: Get post number from line 2
+            int postNumber = Integer.parseInt(lines.get(1).trim());
+
+            // Step 5: Path to sender's actual post file
+            Path postFilePath = Paths.get("users", senderUsername, "Posts", String.valueOf(postNumber));
+
+            if (!Files.exists(postFilePath)) {
+                System.err.println("Referenced post not found: " + postFilePath);
+                return;
+            }
+
+            // Step 6: Read and parse the actual post
+            String actualPostLine = Files.readString(postFilePath).trim();
+            Post actualPost = Post.fromString(actualPostLine);
+
+            // Step 7: Create the reply card
+            Component replyCard = createReplyCard(actualPost);
+            replyCard.getElement().getStyle()
+                    .set("margin", "0 auto")
+                    .set("width", "800px")
+                    .set("margin-top", "20px");
+
+            Component inputCard = createPostInputCard();
+            styleInputCard(inputCard);
+            // ✅ Step 8: Set postList to contain middleBar, inputCard, and the reply card
+            List<Object> items = new ArrayList<>();
+            items.add(middleBar);
+            items.add(inputCard);
+            items.add(replyCard);
+
+            postList.setItems(items);
+
+        } catch (IOException | NumberFormatException e) {
+            e.printStackTrace();
+        }
+    }
 
 
 }
+
+
+

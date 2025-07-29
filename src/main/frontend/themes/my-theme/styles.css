@@ -201,3 +201,29 @@ vaadin-context-menu-overlay[theme~="notification"]::part(overlay) {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   border-radius: 6px;
 }
+vaadin-select::part(label) {
+  color: white;
+}
+
+vaadin-select::part(text-field) {
+  background-color: #1a1a1b;
+  color: white;
+  border: 1px solid #444;
+}
+
+vaadin-select-overlay::part(content) {
+  background-color: #1a1a1b;
+  color: white;
+}
+
+vaadin-select-item {
+  background-color: #1a1a1b;
+  color: white;
+}
+
+vaadin-select-item:hover {
+  background-color: #333;
+}
+html, body {
+    overflow: hidden !important;
+}
