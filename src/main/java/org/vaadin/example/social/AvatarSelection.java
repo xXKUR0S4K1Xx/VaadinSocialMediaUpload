@@ -1,6 +1,7 @@
 package org.vaadin.example.social;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
@@ -8,6 +9,7 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -25,12 +27,12 @@ import com.vaadin.flow.router.RouterLink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.stream.Stream;
 
 @Route("avatarselection")  // Defines the route for this view. When navigating to '/media', this view is displayed.
 public class AvatarSelection extends VerticalLayout {
@@ -170,33 +172,133 @@ public class AvatarSelection extends VerticalLayout {
                 .set("font-size", "24px");  // Adjust the size of the bell if needed
 
         // Create the search bar (TextField)
+// === Search TextField ===
+        Div wrapper = new Div();
+        wrapper.getStyle()
+                .set("position", "relative")
+                .set("display", "inline-block"); // Needed to align the dropdown under the field
+
+// Path to the users folder
+        Path usersDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users");
+
+// List to store usernames (folder names)
+        List<String> suggestions = new ArrayList<>();
+
+        try (Stream<Path> paths = Files.list(usersDir)) {
+            // Filter: only directories, and add their names to the list (don't reassign the list!)
+            paths.filter(Files::isDirectory)
+                    .map(path -> path.getFileName().toString())
+                    .forEach(suggestions::add);
+        } catch (IOException e) {
+            e.printStackTrace(); // or handle error appropriately
+        }
+
+// Create styled TextField for search
         TextField searchField = new TextField();
-        searchField.setPlaceholder("Search Semaino");  // Placeholder text
+        searchField.setPlaceholder("Search Semaino");
         searchField.addClassName("media-textfield");
-        searchField.getElement().getStyle().set("color", "#D7DADC");
+        searchField.getStyle()
+                .set("color", "#D7DADC")
+                .set("background-color", "#6C7A89")
+                .set("border-radius", "20px")
+                .set("width", "300px")
+                .set("border", "none")
+                .set("padding", "0 15px")
+                .set("font-size", "12px")
+                .set("z-index", "2")
+                .set("position", "relative"); // ensure it's above dropdown
+
+// Add value change listener to simulate autocomplete
+        searchField.addValueChangeListener(event -> {
+            String typed = event.getValue();
+            if (typed == null || typed.isEmpty()) {
+                return;
+            }
+
+            // Find first match that starts with typed value (case-insensitive)
+            Optional<String> match = suggestions.stream()
+                    .filter(s -> s.toLowerCase().startsWith(typed.toLowerCase()))
+                    .findFirst();
+
+            match.ifPresent(firstMatch -> {
+                if (!typed.equalsIgnoreCase(firstMatch)) {
+                    searchField.setValue(firstMatch);
+
+                    // JavaScript fallback: highlight the autocompleted part
+                    searchField.getElement().executeJs(
+                            "this.setSelectionRange($0, $1);",
+                            typed.length(),
+                            firstMatch.length()
+                    );
+                }
+            });
 
 
-// Apply styles to the outer TextField container
-        searchField.getElement().getStyle()
-                .set("background-color", "#6C7A89")  // Sky Blue for the outer container
-                .set("color", "#FFFFFF ")               // Text color inside the field (dark for contrast)
-                .set("border-radius", "20px")        // Rounded corners for the container
-                .set("width", "300px")               // Width of the search bar
-                .set("border", "none")               // Remove the default border
-                .set("padding", "0 15px")            // Padding inside the field
-                .set("font-size", "12px");           // Set font size to 14px (adjust as needed)
+        });
 
-// Apply styles to the inner input element to ensure it matches the outer container
-        searchField.getElement().getChildren()
-                .filter(child -> child.getTag().equals("input"))  // Find the <input> element
-                .forEach(input -> input.getStyle()
-                        .set("background-color", "#FFFFFF   ")  // Sky Blue for the inner input field (to match the container)
-                        .set("border-radius", "20px")        // Rounded corners for the input field (to match container)
-                        .set("border", "none")               // Remove default border from the input field
-                        .set("color", "#FFFFFF ")               // Text color in the input (dark for contrast)
-                        .set("padding", "0 15px")            // Padding inside the input field
-                );
+// === Dropdown Container ===
+        ListBox<String> dropdown = new ListBox<>();
+        dropdown.setVisible(false);
+        dropdown.setWidthFull(); // take 100% of parent
+        dropdown.getStyle()
+                .set("position", "absolute")
+                .set("top", "100%") // place right below TextField
+                .set("left", "0")
+                .set("background-color", "#2c2f33")
+                .set("color", "white")
+                .set("border-radius", "10px")
+                .set("z-index", "1")
+                .set("box-shadow", "0 4px 8px rgba(0,0,0,0.3)");
 
+// === Load usernames ===
+        File usersDir2 = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users");
+        List<String> usernames = Optional.ofNullable(usersDir2.listFiles(File::isDirectory))
+                .map(files -> Arrays.stream(files)
+                        .map(File::getName)
+                        .sorted()
+                        .toList())
+                .orElse(List.of());
+
+// === Filter Logic ===
+        searchField.addValueChangeListener(event -> {
+            String input = event.getValue().toLowerCase();
+            if (input.isEmpty()) {
+                dropdown.setVisible(false);
+                return;
+            }
+
+            List<String> filtered = usernames.stream()
+                    .filter(name -> name.toLowerCase().startsWith(input))
+                    .toList();
+
+            if (!filtered.isEmpty()) {
+                dropdown.setItems(filtered);
+                dropdown.setVisible(true);
+            } else {
+                dropdown.setVisible(false);
+            }
+        });
+
+        dropdown.addValueChangeListener(event -> {
+            String selectedUser = event.getValue();
+            if (selectedUser != null) {
+                // Step 1: Write to file
+                try {
+                    Path filePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/selecteduser.txt");
+                    Files.writeString(filePath, selectedUser, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+                } catch (IOException e) {
+                    e.printStackTrace(); // Replace with proper error handling in production
+                    return;
+                }
+
+                // Step 2: Navigate to /userpage
+                UI.getCurrent().navigate("userpage");
+
+                // Step 3: Optional cleanup
+                dropdown.setVisible(false);
+            }
+        });
+        wrapper.add(searchField, dropdown);
 
         // Fancy "Communo" title
         RouterLink clickableTitle = new RouterLink("Semaino", Media.class);
@@ -233,7 +335,7 @@ public class AvatarSelection extends VerticalLayout {
         leftLayout.getElement().getStyle().set("margin-left", "20px");
         leftLayout.getStyle().set("color", "#333");  // Text color stays dark grey
 
-        HorizontalLayout centerLayout = new HorizontalLayout(searchField);
+        HorizontalLayout centerLayout = new HorizontalLayout(wrapper);
         centerLayout.setJustifyContentMode(JustifyContentMode.CENTER);
         centerLayout.setAlignItems(Alignment.CENTER);
         centerLayout.setWidthFull();

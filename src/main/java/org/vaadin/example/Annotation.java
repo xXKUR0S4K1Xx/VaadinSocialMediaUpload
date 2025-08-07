@@ -3,13 +3,38 @@ package org.vaadin.example;
 public class Annotation {
 }
 /*
+Forum admin and moderator roles?
+Forum explanation on the right sidebar.
 
-Fixed notifications.
-fixed gui
-fixed screen scrolling
+Right side gui:
+- For regular users a div with the forums explanation, number of users and more?
+- For admins  add an edit description button.
+    - if clicked it brings you to an admin view where you can change multiple things
+    - one of those is the forumselection (only those of which you are an admin) and then put in a description into a textfield. When clicking on change it changes the description
+add Admin and Moderator folders to the created Forum
+add username# as the first line
+go to the "user" folder and go to username
+go to Admin folder. Add forumname# in the first line
 
-next is? idk
-the entire media shenanigans are still missing in userpage so maybe that i guess?
+- How to make admin roles:
+   - create admin folder in Forums/forumname folder
+        - Call the Folder 0.
+        - First line is adminName1#adminName2#adminName3 etc.
+        - Second line is moderatorName1#moderatorName2#moderatorName3 etc.
+   - In User Folder add Admin folder:
+        - it contains all the forums that you are an admin off
+   - When you create a forum you are an administrator.
+   - Need function to make somebody an admin on UserPage
+        - adds forumname to user/Admin folder
+   - When userpage loads in check if user is admin
+        - If no go as normal
+        - if yes add additional button for modpage?
+        - Sidebar needs button with description and a admin + modlist
+
+Make popular. (choose all people user follows, check their forums and put them in a list.
+Count them up and then bring to a recommended page. Show the 10 recommended forums in a list
+along with an explanation of what it is. (gotta save the explanation first
+
 
 Next objectives:
 Status der user.            DONE

@@ -1,8 +1,14 @@
 package org.vaadin.example.social;
-
+import java.util.function.Supplier;
+import java.util.function.Consumer;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.contextmenu.ContextMenu;
+import com.vaadin.flow.component.contextmenu.HasMenuItems;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -924,6 +930,45 @@ public class UserPost {
             e.printStackTrace();
         }
     }
+    public void buildNotificationMenu(ContextMenu notificationMenu, Media mediaInstance) {
+        String username = mediaInstance.getLoggedInUsername();
+        List<String> previews = getNotificationPreviews(username);
+        List<String> filenames = getNotificationFilenames();
 
+        for (int i = 0; i < previews.size(); i++) {
+            String preview = previews.get(i);
+            String filename = filenames.get(i);
 
+            notificationMenu.addItem(preview, click -> {
+                Path notifPath = Paths.get("users", username, "Notifications", filename);
+
+                mediaInstance.loadPostFromNotification(notifPath);
+
+                deleteNotificationByFilename(filename);
+                renumberNotifications();
+                updateNotificationNumber();
+
+                UI.getCurrent().navigate("media");
+            });
+        }
+    }
+    public void showNotificationCount(Span notificationCountSpan) {
+        try {
+            String username = User.getCurrentUser().getUsername();
+            Path notifCountFile = Paths.get(
+                    "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    username,
+                    "NotificationNumber"
+            );
+
+            String count = "0";
+            if (Files.exists(notifCountFile)) {
+                count = Files.readString(notifCountFile);
+            }
+
+            notificationCountSpan.setText(count);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

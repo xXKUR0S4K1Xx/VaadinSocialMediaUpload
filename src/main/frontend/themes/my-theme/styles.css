@@ -227,3 +227,8 @@ vaadin-select-item:hover {
 html, body {
     overflow: hidden !important;
 }
+.popover-content {
+    background-color: #282b30;
+    border-radius: 16px;
+    overflow: hidden;
+}

@@ -15,7 +15,7 @@ public class MainView extends VerticalLayout {
         Button notebookButton = new Button("Go to Notebook", e -> UI.getCurrent().navigate("notebook"));
         Button loginButton = new Button("Go to Login", e -> UI.getCurrent().navigate("login"));
         Button mediaButton = new Button("Go to Media", e -> UI.getCurrent().navigate("media"));
-
+        Button specialButton = new Button("Go to Special", e -> UI.getCurrent().navigate("special"));
         Button statisticsButton = new Button("Go to Statistics", e -> UI.getCurrent().navigate("statistics"));
         Button coinGameButton = new Button("Go to CoinGame", e -> UI.getCurrent().navigate("coin-game"));
         Button programmierAufgabenButton = new Button("Go to ProgrammierAufgaben", e -> UI.getCurrent().navigate("programmier-aufgaben"));
@@ -24,7 +24,7 @@ public class MainView extends VerticalLayout {
         HorizontalLayout headerLayout = new HorizontalLayout();
         headerLayout.setWidthFull();
         headerLayout.setJustifyContentMode(JustifyContentMode.CENTER);
-        headerLayout.add(programmierAufgabenButton, coinGameButton, statisticsButton, hangmanButton, notebookButton, loginButton, mediaButton);
+        headerLayout.add(specialButton, programmierAufgabenButton, coinGameButton, statisticsButton, hangmanButton, notebookButton, loginButton, mediaButton);
 
         // Add the header layout to the main layout
         add(headerLayout);
