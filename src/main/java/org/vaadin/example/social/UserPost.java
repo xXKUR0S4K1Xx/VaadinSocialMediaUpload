@@ -24,7 +24,7 @@ public class UserPost {
 
     private static final String postsDirectory = "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/posts";
 
-    // No-argument version — reads posts from the current forum folder of the logged-in user
+    //  reads posts from the current forum folder of the logged-in user
     public static List<Post> readPostsFromFiles() {
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
@@ -35,7 +35,7 @@ public class UserPost {
         return readPostsFromCurrentForum(username);
     }
 
-    // This is kept for compatibility but not used in current logic
+    // this is kept for compatibility
     public static List<Post> readPostsFromFiles(Path directory) {
         List<Post> posts = new ArrayList<>();
 
@@ -97,11 +97,11 @@ public class UserPost {
         return posts;
     }
 
-    // Same method name, but now reads posts from the forum folder indicated in user's Forum file
+    // same method name, but now reads posts from the forum folder indicated in user's Forum file
     public static List<Post> readPostsForUser(String username) {
         List<Post> posts = new ArrayList<>();
 
-        // Read the forum name from user's Forum file
+        // read the forum name from user's Forum file
         Path forumFilePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
         String forumName;
         try {
@@ -119,7 +119,7 @@ public class UserPost {
 
         Path forumPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum", forumName);
 
-        // Create forum directory if missing
+        // create forum directory if missing
         if (!Files.exists(forumPostsDir)) {
             try {
                 Files.createDirectories(forumPostsDir);
@@ -130,7 +130,7 @@ public class UserPost {
             }
         }
 
-        // Read posts from forum posts directory
+        // read posts from forum posts directory
         try {
             Files.list(forumPostsDir)
                     .filter(Files::isRegularFile)
@@ -177,7 +177,7 @@ public class UserPost {
         return posts;
     }
 
-    // Helper method used by readPostsFromFiles()
+    // helper method used by readPostsFromFiles()
     private static List<Post> readPostsFromCurrentForum(String username) {
         return readPostsForUser(username);
     }
@@ -185,7 +185,7 @@ public class UserPost {
         return readPostsSortedByLikes(Paths.get(postsDirectory));
     }
 
-    // Overloaded version with Path argument
+    // trying overloaded version with Path argument (edit: yay it works)
     public static List<Post> readPostsSortedByLikes(Path directory) {
         List<Post> posts = new ArrayList<>();
 
@@ -232,7 +232,7 @@ public class UserPost {
             e.printStackTrace();
         }
 
-        // Sort by likes descending
+        // sort by likes descending
         posts.sort((p1, p2) -> Integer.compare(p2.getLikes(), p1.getLikes()));
 
         return posts;
@@ -294,9 +294,9 @@ public class UserPost {
 
 
 
-    //Aktualisiert einen bestehenden Post (z. B. bei Like oder Edit) und speichert alle Posts neu in den Dateien.
+    //Aktualisiert einen bestehenden Post und speichert alle Posts neu in den Dateien.
     public static void savePost(Post updatedPost) {
-        // Get current user
+        // get current user
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
             System.err.println("No logged-in user found.");
@@ -304,10 +304,10 @@ public class UserPost {
         }
         String username = currentUser.getUsername();
 
-        // Read posts from current user's forum folder
+        // read posts from current user's forum folder
         List<Post> posts = readPostsForUser(username);
 
-        // Update the post in the list
+        // update the post in the list
         for (int i = 0; i < posts.size(); i++) {
             if (posts.get(i).getPostId().equals(updatedPost.getPostId())) {
                 posts.set(i, updatedPost); // Replace the old one
@@ -315,8 +315,7 @@ public class UserPost {
             }
         }
 
-        // Save all posts back to the current forum posts directory
-        // Get forum name from user's Forum file
+        // get forum name from user's Forum file
         Path forumFilePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
         String forumName;
         try {
@@ -343,7 +342,7 @@ public class UserPost {
             }
         }
 
-        // Save updated posts to forum posts directory
+        // save updated posts to forum posts directory
         for (Post post : posts) {
             try {
                 Path postFile = forumPostsDir.resolve(post.getPostId());
@@ -353,13 +352,11 @@ public class UserPost {
                 e.printStackTrace();
             }
         }
-
-        // Also save the post in the user's personal directory (your existing method)
         savePostToUserDirectory(updatedPost, true);
     }
 
 
-    // Create the UI component for replying to a post
+    // create the UI component for replying to a post
     public Component createReplyInputSection(Post parentPost) {
         VerticalLayout replySection = new VerticalLayout();
         replySection.setSpacing(false);
@@ -375,13 +372,13 @@ public class UserPost {
                 .set("padding", "0")
                 .set("font-size", "14px");
 
-        // Layout for icon + reply button
+        // layout for icon + reply button
         HorizontalLayout replyButtonRow = new HorizontalLayout(replyButton);
         replyButtonRow.setSpacing(false);
         replyButtonRow.getStyle().set("gap", "5px"); // manually set small gap
         replyButtonRow.setAlignItems(Alignment.CENTER);
 
-        // Reply input section
+        // reply input section
         HorizontalLayout inputRow = new HorizontalLayout();
         inputRow.setVisible(false);
         inputRow.setWidthFull();
@@ -429,13 +426,13 @@ public class UserPost {
 
 
 
-    // Erstellt eine Antwort (Reply) auf einen bestehenden Post.
+    // creates reply
     public static void createAndSaveReply(Post parentPost, String replyContent) {
         if (replyContent == null || replyContent.trim().isEmpty()) {
             return; // Don't create a post if the content is empty
         }
 
-        // Get current user
+        // get current user
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
             System.err.println("No logged-in user found.");
@@ -443,11 +440,11 @@ public class UserPost {
         }
         String currentUserName = currentUser.getUsername();
 
-        // Get current time in seconds
+        // time
         long currentTimeInSeconds = System.currentTimeMillis() / 1000;
         String formattedTimestamp = Post.formatTimestamp(String.valueOf(currentTimeInSeconds));
 
-        // Find the maximum postId in the user's forum folder to generate a new unique ID
+        // Find the highest postId in the user's forum folder to generate a new unique ID
         String forumName = getUserForumName(currentUserName);
         if (forumName == null) {
             System.err.println("Could not find forum name for user " + currentUserName);
@@ -469,20 +466,18 @@ public class UserPost {
                 ""                             // likedUsers
         );
 
-        // Save the new reply post
         saveNewPost(newReply, true); // true means it is a reply, so no post count increment
 
-        // --- ADD NOTIFICATION HERE ---
-        // Notify the user who owns the parent post about the new reply, if different from current user
+        // notify the user who owns the parent post about the new reply, if different from current user
         if (!currentUserName.equals(parentPost.getUserName())) {
             UserPost.createNotificationForUser(parentPost.getUserName(), replyContent);
         }
     }
 
 
-    // Speichert einen neuen Post oder Reply als Datei.
+    // speichert neuen Post oder Reply als Datei.
     public static void saveNewPost(Post newPost, boolean isReply) {
-        // Get forum folder for user
+        // get forum folder for user
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
             System.err.println("No logged-in user found.");
@@ -498,17 +493,17 @@ public class UserPost {
         Path forumPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum", forumName);
 
         try {
-            // Create forum folder if not exist
+            // create forum folder if not exist
             if (!Files.exists(forumPostsDir)) {
                 Files.createDirectories(forumPostsDir);
             }
-            // Save to forum directory
+            // save to forum directory
             Files.write(forumPostsDir.resolve(newPost.getPostId()), newPost.toString().getBytes());
 
-            // Save to user-specific folder
+            // save to user-specific folder
             savePostToUserDirectory(newPost, false); // false because it's a new post, not overwrite
 
-            // Only update post count if it's a top-level post (not reply)
+            // only update post count if it's a new post (not reply)
             if (!isReply) {
                 updateUserPosts(newPost.getUserName());
             }
@@ -528,7 +523,7 @@ public class UserPost {
         return null;
     }
 
-    // Erhöht den Post-Zähler eines Benutzers, wenn dieser einen neuen Post (kein Reply) erstellt.
+    // erhöht Post-Zähler des Benutzers wenn er einen neuen Post (kein Reply) erstellt.
     private static void updateUserPosts(String username) {
         File userDirectory = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users");
 
@@ -564,9 +559,9 @@ public class UserPost {
         }
     }
 
-    // Erstellt einen ganz neuen Post (kein Reply) und speichert ihn.
+    // erstellt neuen Post (kein Reply) und speichert den
     public static Post createAndSaveNewPost(String postContent) {
-        // Get current user
+        //current user
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
             System.err.println("No logged-in user found.");
@@ -574,7 +569,7 @@ public class UserPost {
         }
         String currentUserName = currentUser.getUsername();
 
-        // Get forum name and posts directory
+        // forum name und post directory
         String forumName = getUserForumName(currentUserName);
         if (forumName == null) {
             System.err.println("Could not find forum name for user " + currentUserName);
@@ -584,14 +579,14 @@ public class UserPost {
 
         int nextId = getNextPostId(forumPostsDir);
 
-        // Get current time in seconds
+        // current timee
         long currentTimeInSeconds = System.currentTimeMillis() / 1000;
         String formattedTimestamp = Post.formatTimestamp(String.valueOf(currentTimeInSeconds));
 
         // Create the new post
         Post newPost = new Post(
                 String.valueOf(nextId),   // postId
-                "0",                     // parentId (top-level)
+                "0",                     // parentId
                 0,                       // likes
                 "",                      // parentUser
                 postContent,             // postContent
