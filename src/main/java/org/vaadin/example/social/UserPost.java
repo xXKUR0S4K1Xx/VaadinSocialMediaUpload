@@ -29,7 +29,7 @@ public class UserPost {
 
     private static final String postsDirectory = "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/posts";
 
-    // No-argument version — reads posts from the current forum folder of the logged-in user
+
     public static List<Post> readPostsFromFiles() {
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
@@ -291,7 +291,7 @@ public class UserPost {
             e.printStackTrace();
         }
 
-        // ✅ Sort by likes descending
+        //  Sort by likes descending
         posts.sort((p1, p2) -> Integer.compare(p2.getLikes(), p1.getLikes()));
 
         return posts;
@@ -299,7 +299,7 @@ public class UserPost {
 
 
 
-    //Aktualisiert einen bestehenden Post (z. B. bei Like oder Edit) und speichert alle Posts neu in den Dateien.
+    //Aktualisiert einen bestehenden Post und speichert alle Posts neu in den Dateien.
     public static void savePost(Post updatedPost) {
         // Get current user
         User currentUser = User.getCurrentUser();
@@ -406,12 +406,12 @@ public class UserPost {
 
         Button sendButton = new Button("Send");
         sendButton.getStyle()
-                .set("background-color", "#E0E0E0")  // light grayish-white
-                .set("color", "#333333")             // dark text for contrast
+                .set("background-color", "#E0E0E0")
+                .set("color", "#333333")
                 .set("border", "none")
                 .set("border-radius", "4px")
                 .set("font-weight", "bold")
-                .set("box-shadow", "none");          // keep it flat (dull look)
+                .set("box-shadow", "none");
         inputRow.add(replyField, sendButton);
 
         replyButton.addClickListener(e -> inputRow.setVisible(!inputRow.isVisible()));
@@ -751,7 +751,6 @@ public class UserPost {
 
     public void applySimulatedPlaceholder(TextArea area, String placeholderText, String inputColor) {
         simulatePlaceholder(area, placeholderText);
-        // Optionally you can add more styling or logic here using inputColor
     }
 
     public void updateNotificationNumber() {
@@ -871,6 +870,7 @@ public class UserPost {
      * @param recipientUsername the user receiving the notification
      * @param senderUsername the user who wrote the post
      */
+    //MADE WITH CHATGPT. DONT DELETE UNTIL I UNDERSTAND IT
     public static void createNotificationForUser(String recipientUsername, String senderUsername) {
         try {
             System.out.println("=== DEBUG: Starting createNotificationForUser ===");

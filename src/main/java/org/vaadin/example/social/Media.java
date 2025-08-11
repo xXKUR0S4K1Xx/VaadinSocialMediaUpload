@@ -3,7 +3,6 @@ import com.vaadin.flow.component.contextmenu.ContextMenu;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.data.value.ValueChangeMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +39,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 
 
-@Route("media")  // Defines the route for this view. When navigating to '/media', this view is displayed.
+@Route("media")
 public class Media extends VerticalLayout {
 
     private Button sortNewButton;
@@ -54,30 +53,28 @@ public class Media extends VerticalLayout {
 
 
 
-    public Media() {  // Constructor that initializes the Media view.
-        setSizeFull();  // Set the layout to take up the entire available space.
-        setAlignItems(Alignment.CENTER);  // Align child components (like cards) to the center horizontally.
-        setSpacing(false);  // Disable spacing between the components.
+    public Media() {
+        setSizeFull();
+        setAlignItems(Alignment.CENTER);
+        setSpacing(false);
         setMargin(false);
         setPadding(false);
-        getStyle().set("background-color", "#1a1a1b");  // Baby blue background
+        getStyle().set("background-color", "#1a1a1b");
         String username = getLoggedInUsername();
         String avatarUrl = "/avatar/" + username + "/" + getAvatarFilenameForUser(username);
 
-//this is the popup on the left when clicking on the avatar
         VerticalLayout popoverContent = new VerticalLayout();
         popoverContent.addClassName("popover-content");
 
 
 
-// Create avatar with image (not initials)
+
         Avatar userAvatar2 = new Avatar();
         userAvatar2.setImage(avatarUrl);
         userAvatar2.getStyle()
                 .set("background-color", "white")
                 .set("border", "1px solid black");
 
-        //inside the userInfoLayout is View Profile at the top and the username at the bottom. This is View Profile
         Span userpageLink = new Span("View Profile");
         userpageLink.getStyle()
                 .set("font-weight", "bold")
@@ -86,7 +83,6 @@ public class Media extends VerticalLayout {
                 .set("text-decoration", "none")
                 .set("cursor", "pointer");
 
-// Add click listener that writes username and navigates
         userpageLink.getElement().addEventListener("click", event -> {
             try {
                 Files.writeString(Paths.get("selecteduser.txt"), username);
@@ -96,14 +92,14 @@ public class Media extends VerticalLayout {
             UI.getCurrent().navigate(UserPage.class);
         });
 
-        //inside the userInfoLayout is View Profile at the top and the username at the bottom. This is the username
+       //inside the userInfoLayout is View Profile at the top and the username at the bottom. This is the username
         Div usernameDiv = new Div();
-        usernameDiv.setText(username); // Use the username of the profile shown
+        usernameDiv.setText(username);
         usernameDiv.getStyle()
                 .set("font-size", "13px")
                 .set("color", "#7e8f96");
 
-        //Contains View Profile and username. It is part of the popup on the left
+        //contains View Profile and username. It is part of the popup on the left
         VerticalLayout userInfoLayout = new VerticalLayout(userpageLink, usernameDiv);
         userInfoLayout.setPadding(false);
         userInfoLayout.setSpacing(false);
@@ -111,15 +107,15 @@ public class Media extends VerticalLayout {
 
 
         Button logoutButton = new Button("Logout", event -> {
-            // Implement logout logic here
+            // implement logout logic here
             getUI().ifPresent(ui -> ui.navigate("login"));
         });
         logoutButton.getStyle()
-                .set("color", "white")  // Set text color to white
+                .set("color", "white")
                 .set("font-size", "14px");
 
         Button avatarCreatingButton = new Button("Upload your own Avatar", event -> {
-            // Implement logout logic here
+            // implement logout logic here
             getUI().ifPresent(ui -> ui.navigate("avatarselection"));
         });
         avatarCreatingButton.getStyle().set("color", "white")
@@ -128,37 +124,37 @@ public class Media extends VerticalLayout {
         //popoverContent is the popup on the right when clicking on avatar. secondavatarlayout is View Profile and username (avatarLink, userInfoLayout)
         popoverContent.add(userInfoLayout, avatarCreatingButton, logoutButton);
 
-        //Popovercontent is inside popover because Popover is a vaadin component that creates the actual popup
+        //popovercontent is inside popover
         Popover popover = new Popover();
         popover.setTarget(userAvatar2);
         popover.setPosition(PopoverPosition.BOTTOM);
         popover.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
         popover.add(popoverContent);  // Add content to the popover only once
 
-        // Create a variable to track if the popover is already opened
+        //cCreate a variable to track if the popover is already opened
         boolean[] isOpened = {false};
 
-        // Handle the click event to toggle the popover visibility
+        // handle the click event to toggle the popover visibility
         userAvatar2.getElement().addEventListener("click", event -> {
             if (!isOpened[0]) {
                 // Open the popover if it's not opened
                 popover.setOpened(true);
                 isOpened[0] = true;
 
-                // Set a timeout to keep the popover open for at least 1 second
+                // seet a timeout to keep the popover open for at least 1 second
                 getUI().ifPresent(ui -> ui.access(() -> {
-                    // After 1 second, allow the popover to be closed again
+                    // after 1 second, allow the popover to be closed again
                     new Timer().schedule(new TimerTask() {
                         public void run() {
-                            // Check if the popover is still open, then allow closing
+
                             if (popover.isOpened()) {
-                                // Do nothing if it's already open, just wait for the close action
+
                             }
                         }
-                    }, 1000);  // Delay for 1 second (1000 milliseconds)
+                    }, 1000);
                 }));
             } else {
-                // If the popover is already opened, close it when clicked again
+
                 popover.setOpened(false);
                 isOpened[0] = false;
             }
@@ -170,7 +166,7 @@ public class Media extends VerticalLayout {
         notificationBell.getElement().getStyle().set("color", "white");
 
         //overlay with notification count
-        Span notificationCount = new Span(); // Will be added conditionally
+        Span notificationCount = new Span();
         int notifNumber = 0;
 
         try {
@@ -217,35 +213,32 @@ public class Media extends VerticalLayout {
         }
         bellWrapper.getStyle().set("position", "relative").set("width", "fit-content");
 
-// Dropdown on notification bell
+// dropdown on notification bell
         ContextMenu notificationMenu = new ContextMenu(notificationButton);
         notificationMenu.getElement().setAttribute("theme", "notification");
         notificationMenu.getElement().getStyle().set("background-color", "#000000");
         notificationMenu.setOpenOnClick(true);
 
-// Build menu items from notification previews
+// build menu items from notification previews
         UserPost userPost = new UserPost();
         userPost.buildNotificationMenu(notificationMenu, this);
         userPost.showNotificationCount(notificationCount);
 
-// === Search TextField ===
 
-// Path to the users folder
+// path to the users folder
         Path usersDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users");
 
-// List to store usernames (folder names)
+// list to store usernames (folder names)
         List<String> suggestions = new ArrayList<>();
 
         try (Stream<Path> paths = Files.list(usersDir)) {
-            // Filter: only directories, and add their names to the list (don't reassign the list!)
             paths.filter(Files::isDirectory)
                     .map(path -> path.getFileName().toString())
                     .forEach(suggestions::add);
         } catch (IOException e) {
-            e.printStackTrace(); // or handle error appropriately
+            e.printStackTrace();
         }
 
-// Create styled TextField for search
         TextField searchField = new TextField();
         searchField.setPlaceholder("Search Semaino");
         searchField.addClassName("media-textfield");
@@ -258,16 +251,16 @@ public class Media extends VerticalLayout {
                 .set("padding", "0 15px")
                 .set("font-size", "12px")
                 .set("z-index", "2")
-                .set("position", "relative"); // ensure it's above dropdown
+                .set("position", "relative");
 
-// Add value change listener to simulate autocomplete
+// add value change listener to simulate autocomplete
         searchField.addValueChangeListener(event -> {
             String typed = event.getValue();
             if (typed == null || typed.isEmpty()) {
                 return;
             }
 
-            // Find first match that starts with typed value (case-insensitive)
+            // find first match that starts with typed value (case-insensitive)
             Optional<String> match = suggestions.stream()
                     .filter(s -> s.toLowerCase().startsWith(typed.toLowerCase()))
                     .findFirst();
@@ -276,7 +269,6 @@ public class Media extends VerticalLayout {
                 if (!typed.equalsIgnoreCase(firstMatch)) {
                     searchField.setValue(firstMatch);
 
-                    // JavaScript fallback: highlight the autocompleted part
                     searchField.getElement().executeJs(
                             "this.setSelectionRange($0, $1);",
                             typed.length(),
@@ -288,13 +280,13 @@ public class Media extends VerticalLayout {
 
         });
 
-// === Dropdown Container ===
+
         ListBox<String> dropdown = new ListBox<>();
         dropdown.setVisible(false);
-        dropdown.setWidthFull(); // take 100% of parent
+        dropdown.setWidthFull();
         dropdown.getStyle()
                 .set("position", "absolute")
-                .set("top", "100%") // place right below TextField
+                .set("top", "100%")
                 .set("left", "0")
                 .set("background-color", "#2c2f33")
                 .set("color", "white")
@@ -305,11 +297,11 @@ public class Media extends VerticalLayout {
         Div wrapper = new Div();
         wrapper.getStyle()
                 .set("position", "relative")
-                .set("display", "inline-block"); // Needed to align the dropdown under the field
+                .set("display", "inline-block");
 
         wrapper.add(searchField, dropdown);
 
-// === Load usernames ===
+// load username
         File usersDir2 = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users");
         List<String> usernames = Optional.ofNullable(usersDir2.listFiles(File::isDirectory))
                 .map(files -> Arrays.stream(files)
@@ -318,7 +310,7 @@ public class Media extends VerticalLayout {
                         .toList())
                 .orElse(List.of());
 
-// === Filter Logic ===
+// filter
         searchField.addValueChangeListener(event -> {
             String input = event.getValue().toLowerCase();
             if (input.isEmpty()) {
@@ -341,28 +333,27 @@ public class Media extends VerticalLayout {
         dropdown.addValueChangeListener(event -> {
             String selectedUser = event.getValue();
             if (selectedUser != null) {
-                // Step 1: Write to file
+
                 try {
                     Path filePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/selecteduser.txt");
                     Files.writeString(filePath, selectedUser, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                 } catch (IOException e) {
-                    e.printStackTrace(); // Replace with proper error handling in production
+                    e.printStackTrace();
                     return;
                 }
 
-                // Step 2: Navigate to /userpage
+
                 UI.getCurrent().navigate("userpage");
 
-                // Step 3: Optional cleanup
                 dropdown.setVisible(false);
             }
         });
 
-        // Fancy "Communo" title
+        // semaino title
         Span clickableTitle = new Span("Semaino");
         clickableTitle.addClickListener(e -> {
-            loadPosts(); // your method
-            UI.getCurrent().navigate(Media.class); // manually navigate
+            loadPosts();
+            UI.getCurrent().navigate(Media.class);
         });        clickableTitle.getStyle()
                 .set("font-family", "'Segoe Script', cursive")
                 .set("font-size", "28px")
@@ -373,79 +364,77 @@ public class Media extends VerticalLayout {
                 .setWidth("179px");
 
 
-// Add this `clickableTitle` to your layout instead of the Span directly
 
-        // Create root layout
+        // create root layout
         HorizontalLayout rootLayout = new HorizontalLayout();
         rootLayout.setWidthFull();
         rootLayout.setPadding(false);
         rootLayout.setMargin(false);
 
 
-        // Apply baby blue background without affecting text color
+        // apply baby blue background without affecting text color
         rootLayout.getStyle()
                 .set("border-bottom", "1px solid #666")
-                .set("background-color", "#1a1a1b")  // Baby blue background
-                .set("color", "#ffffff");  // Text remains dark grey, unaffected by the background
+                .set("background-color", "#1a1a1b")
+                .set("color", "#ffffff");
 
 
-        // Sub-layouts for left, center, and right
+        // sub-layouts for left, center, and right
         HorizontalLayout leftLayout = new HorizontalLayout(clickableTitle);
         leftLayout.setJustifyContentMode(JustifyContentMode.START);
         leftLayout.setWidthFull();
         leftLayout.getElement().getStyle().set("margin-left", "20px");
-        leftLayout.getStyle().set("color", "#333");  // Text color stays dark grey
+        leftLayout.getStyle().set("color", "#333");
 
 
         HorizontalLayout centerLayout = new HorizontalLayout(wrapper);
         centerLayout.setJustifyContentMode(JustifyContentMode.CENTER);
         centerLayout.setAlignItems(Alignment.CENTER);
         centerLayout.setWidthFull();
-        centerLayout.getStyle().set("color", "#333");  // Text color stays dark grey
-
+        centerLayout.getStyle().set("color", "#333");
         HorizontalLayout rightLayout = new HorizontalLayout(bellWrapper, userAvatar2);
         rightLayout.setJustifyContentMode(JustifyContentMode.END);
         rightLayout.setAlignItems(Alignment.CENTER);
         rightLayout.setWidthFull();
         rightLayout.getElement().getStyle().set("margin-right", "20px");
-        rightLayout.getStyle().set("color", "#333");  // Text color stays dark grey
+        rightLayout.getStyle().set("color", "#333");
 
         // Add all sub-layouts to root
         rootLayout.add(leftLayout, centerLayout, rightLayout);
         rootLayout.setFlexGrow(1, leftLayout, centerLayout, rightLayout);
 
-        // Create the input card ONCE. This is the first element of the list.
+        // create the input card ONCE. this is the first element of the list.
         Component inputCard = createPostInputCard();  // Create the input card for adding posts or replies.
-        inputCard.getElement().getStyle().set("width", "800px");  // Set the width of the input card to 800px.
-        inputCard.getElement().getStyle().set("margin-left", "auto");  // Center the card horizontally.
-        inputCard.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
+        inputCard.getElement().getStyle().set("width", "800px");
+        inputCard.getElement().getStyle().set("margin-left", "auto");
+        inputCard.getElement().getStyle().set("margin-right", "auto");
         inputCard.getElement().getStyle().set("margin-top", "15px");
 
-        // === Sort Button (Trigger) ===
+        // sort button
         sortButton = new Button("New");
         sortButton.addClassName("glow-hover");
         sortButton.getStyle()
                 .set("margin", "0")
                 .set("padding", "0")
                 .set("height", "20px")
-                .set("color", "#686b6e") // Set text color
-                .set("font-size", "13px");       // Make text smaller (half of typical 20px)
+                .set("color", "#686b6e")
+                .set("font-size", "13px");
 
         Div sortButtonWrapper = new Div();
         sortButtonWrapper.addClassName("elliptical-glow-wrapper");
 
-// Add the sortButton inside the wrapper
+// add the sortButton inside the wrapper
         sortButtonWrapper.add(sortButton);
-// === Popover Setup ===
+//sort popover
         Popover sortPopoverPopup = new Popover();
         sortPopoverPopup.addClassName("glow-hover");
-        sortPopoverPopup.setTarget(sortButton); // This is the trigger
+        sortPopoverPopup.setTarget(sortButton);
         sortPopoverPopup.setPosition(PopoverPosition.BOTTOM);
         sortPopoverPopup.addThemeVariants(PopoverVariant.ARROW, PopoverVariant.LUMO_NO_PADDING);
 
-// === Popover Content ===
+// content popover
         VerticalLayout sortPopoverContent = new VerticalLayout();
-        sortPopoverContent.setWidthFull(); // Ensure popup content fills available width
+        sortPopoverContent.setWidthFull();
         sortPopoverContent.setPadding(false);
         sortPopoverContent.setSpacing(false);
         sortPopoverContent.getStyle()
@@ -453,7 +442,7 @@ public class Media extends VerticalLayout {
                 .set("color", "#ffffff")
                 .set("min-width", "120px")
                 .set("text-align", "left")
-                .set("border-radius", "8px");  // 👈 Rounded corners
+                .set("border-radius", "8px");
 
 
         Div sortHeader = new Div();
@@ -462,11 +451,11 @@ public class Media extends VerticalLayout {
                 .set("font-weight", "bold")
                 .set("color", "#686b6e")
                 .set("text-align", "center")
-                .set("width", "100%"); // Ensure it spans enough space to allow centering
+                .set("width", "100%");
 
-// === Sort Options ===
+// sort options
         sortNewButton = new Button("New");
-        sortNewButton.setWidthFull(); // Ensures the button spans full width
+        sortNewButton.setWidthFull();
         sortNewButton.addClassName("popup-hover-item");
         sortNewButton.getStyle().set("width", "100%")
                 .set("color", "#D7DADC");
@@ -478,14 +467,12 @@ public class Media extends VerticalLayout {
         sortTopButton.getStyle().set("width", "100%")
                 .set("color", "#D7DADC");
 
-// === Assemble Popover ===
+// popover
         sortPopoverContent.add(sortHeader, sortNewButton, sortTopButton);
         sortPopoverPopup.add(sortPopoverContent);
 
-// === Track Popover Open State ===
         boolean[] isSortPopoverOpen = {false};
 
-// === Toggle with Delay to Prevent Vaadin Sync Issues ===
         sortButton.getElement().addEventListener("click", e -> {
             if (!isSortPopoverOpen[0]) {
                 new Timer().schedule(new TimerTask() {
@@ -503,7 +490,6 @@ public class Media extends VerticalLayout {
             }
         });
 
-// === Button Logic ===
         sortNewButton.addClickListener(e -> {
             sortMode = 0;
             loadPosts();
@@ -522,16 +508,16 @@ public class Media extends VerticalLayout {
         updateSortButtonHighlight();
 
 
-// Create the horizontal layout wrapper and center the button
-        middleBar = new HorizontalLayout(sortButtonWrapper);        middleBar.setWidth("800px"); // Fixed width
+// create the horizontal layout wrapper and center the button
+        middleBar = new HorizontalLayout(sortButtonWrapper);        middleBar.setWidth("800px");
         middleBar.setHeight("20px");
-        middleBar.getElement().getStyle().set("margin-left", "auto");  // Center the card horizontally.
-        middleBar.getElement().getStyle().set("margin-right", "auto");  // Center the card horizontally.
-        middleBar.getElement().getStyle().set("margin-top", "10px");  // Center the card horizontally.
-        middleBar.setJustifyContentMode(FlexComponent.JustifyContentMode.START); // Center the button
+        middleBar.getElement().getStyle().set("margin-left", "auto");
+        middleBar.getElement().getStyle().set("margin-right", "auto");
+        middleBar.getElement().getStyle().set("margin-top", "10px");
+        middleBar.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
         middleBar.setPadding(false);
         middleBar.getStyle()
-                .set("background-color", "#1a1a1b"); // Optional: match card background
+                .set("background-color", "#1a1a1b");
 
 
 
@@ -549,6 +535,7 @@ public class Media extends VerticalLayout {
         postList.setItems(items);
         postList.getElement().getStyle().set("overflow", "hidden");
 
+        //I made this with part with chatgpt. Dont delete comment until I've went over everything
         postList.setRenderer(new ComponentRenderer<>(item -> {  // Define how each item should be rendered in the list.
             if (item instanceof Component) {
                 return (Component) item;  // If the item is the input card, return it as a component.
@@ -559,37 +546,37 @@ public class Media extends VerticalLayout {
                 } else {
                     card = createReplyCard(post);  // Otherwise, create a reply card.
                 }
-                // Set styles for the card (no background color interference).
+
                 card.getElement().getStyle().set("margin", "0 auto");
                 card.getElement().getStyle().set("width", "800px");
                 card.getElement().getStyle().set("margin-top", "10px");
                 return card;
             } else {
-                return new Span("Unknown item");  // Default message if item is unknown.
+                return new Span("Unknown item");
             }
         }));
 
-        postList.setWidthFull();  // Make the list take up full width.
-        postList.setHeightFull();  // Make the list take up full height.
+        postList.setWidthFull();
+        postList.setHeightFull();
 
-        // Wrapper layout for holding the content
-        VerticalLayout content = new VerticalLayout();  // A container to hold the post list.
-        content.setWidthFull();  // Make the container take up full width.
-        content.setHeight("100%");  // Make the container take up the remaining height (95%).
-        content.setPadding(false);  // Remove padding from the container.
-        content.setSpacing(true);  // Add spacing between components inside the container.
-        content.setDefaultHorizontalComponentAlignment(Alignment.CENTER);  // Center-align the components horizontally.
+        // wrapper layout for holding the content
+        VerticalLayout content = new VerticalLayout();
+        content.setWidthFull();
+        content.setHeight("100%");
+        content.setPadding(false);
+        content.setSpacing(true);
+        content.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
 
 
-        content.add(postList);  // Add the post list to the content layout.
-        content.setFlexGrow(1, postList);  // Make the post list grow to fill available space.
+        content.add(postList);
+        content.setFlexGrow(1, postList);
 
         HorizontalLayout layout = new HorizontalLayout();
         layout.setSizeFull();
         layout.setAlignItems(Alignment.CENTER);
-        layout.getStyle().set("position", "relative"); // Make it a positioning context
+        layout.getStyle().set("position", "relative");
 
-// ===== Sidebar (Overlay) =====
+// sidebar
         VerticalLayout sideBar = new VerticalLayout();
         sideBar.setHeightFull();
         sideBar.setWidth("200px");
@@ -600,7 +587,7 @@ public class Media extends VerticalLayout {
                 .set("background-color", "#1a1a1b")
                 .set("color", "#FFFFFF");
 
-// Home icon that routes to Media
+// home icon
         Icon homeIcon = VaadinIcon.BUILDING.create();
         Span homeText = new Span("Home");
         HorizontalLayout homeLayout = new HorizontalLayout(homeIcon, homeText);
@@ -621,24 +608,24 @@ public class Media extends VerticalLayout {
 
         allLayout.getStyle().set("cursor", "pointer");
 
-// Click navigates to forum "all"
+// navigates to forum "all"
         allLayout.addClickListener(event -> {
             try {
-                // Save "all" as selected forum
+                // save "all" as selected forum
                 Path userForumFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
                 Files.writeString(userForumFile, "all", StandardCharsets.UTF_8,
                         StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-                // Navigate or reload the current view (if needed)
-                UI.getCurrent().getPage().reload(); // or navigate to the forum page if it's a separate route
+
+                UI.getCurrent().getPage().reload();
 
             } catch (IOException e) {
-                e.printStackTrace(); // optionally show a popup error here
+                e.printStackTrace();
             }
         });
 
 
-// A cintainer for the div that says All Pages
+// a cintainer for the div that says All Pages
         Div containerDiv = new Div();
         containerDiv.setText("All Pages:");
         containerDiv.getStyle()
@@ -646,7 +633,7 @@ public class Media extends VerticalLayout {
                 .set("font-weight", "bold")
                 .set("color", "white");
 
-        //A container for the Div that says Current Page:
+        //a container for the Div that says Current Page:
         Div containerDiv2 = new Div();
         containerDiv2.setText("Current Page:");
         containerDiv2.getStyle()
@@ -655,7 +642,7 @@ public class Media extends VerticalLayout {
                 .set("color", "white");
 
 
-        //This is the dropdown menu for Current Page: When you click on somethin it opens a dropdown of all subscribed pages
+        //this is the dropdown menu for Current Page: When you click on somethin it opens a dropdown of all subscribed pages
         Div pageSelectionPopup = new Div();
         pageSelectionPopup.getStyle()
                 .set("background-color", "#282b30")
@@ -668,21 +655,21 @@ public class Media extends VerticalLayout {
                 .set("box-sizing", "border-box")
                 .set("display", "none")
                 .set("z-index", "11")
-                .set("max-height", "300px")      // 4 items * 40px (or adjust to your item height)
-                .set("overflow-y", "auto");      // Scroll only vertically when content exceeds height
+                .set("max-height", "300px")
+                .set("overflow-y", "auto");
 
         Div popupWrapper = new Div();
         popupWrapper.getStyle()
-                .set("position", "relative")    // Relative positioning context
-                .set("width", "100%");          // Match the full width of the trigger area
+                .set("position", "relative")
+                .set("width", "100%");
         popupWrapper.add(pageSelectionPopup);
 
-// Title for selecting forum
+// title for selecting forum
         H4 dialogTitle = new H4("Select a forum");
         dialogTitle.getStyle().set("color", "white");
         pageSelectionPopup.add(dialogTitle);
 
-// Vertical layout for forum buttons
+// vertical layout for forum buttons
         VerticalLayout pageListLayout = new VerticalLayout();
         pageListLayout.setPadding(false);
         pageListLayout.setSpacing(false);
@@ -690,22 +677,22 @@ public class Media extends VerticalLayout {
         pageSelectionPopup.add(pageListLayout);
 
 
-// Title for forum creation
+// title for forum creation
         H4 createTitle = new H4("Create new forum");
         createTitle.getStyle()
                 .set("color", "white")
                 .set("font-size", "14px")
                 .set("margin", "16px 0 4px 0");
 
-// TextField with dark background and compact height
-// TextField with dark background and rounded corners
+
+
         TextField forumNameField = new TextField();
         forumNameField.setPlaceholder("");
         forumNameField.setWidthFull();
         forumNameField.getElement().getStyle()
-                .set("--lumo-text-field-size", "25px") // Controls the full component height
-                .set("font-size", "12px")              // Adjusts text size
-                .set("line-height", "25px")            // Aligns text vertically
+                .set("--lumo-text-field-size", "25px")
+                .set("font-size", "12px")
+                .set("line-height", "25px")
                 .set("border", "1px solid #444")
                 .set("border-radius", "4px")
                 .set("background-color", "#1a1a1b")
@@ -791,10 +778,10 @@ public class Media extends VerticalLayout {
                 showPopup.accept("Forum '" + forumName + "' created and selected!");
                 forumNameField.clear();
 
-                // ✅ Update the button label here
+                //  Update the button label here
                 openPopupButton.setText(forumName);
 
-                // ✅ Write username as file inside Forum/<forumName>/Admin/<username>
+                //  Write username as file inside Forum/<forumName>/Admin/<username>
                 Path forumAdminDir = newForumPath.resolve("Admin");
                 Files.createDirectories(forumAdminDir);
                 Path userAdminFile = forumAdminDir.resolve(username);
@@ -843,11 +830,11 @@ public class Media extends VerticalLayout {
         forumDropdown.setPlaceholder("Select a forum");
         forumDropdown.setWidth("165px");
         forumDropdown.getStyle()
-                .set("height", "42px")                // Bigger container box
-                .set("--lumo-size", "42px")           // Vaadin internal sizing
-                .set("font-size", "12px")             // Keep text readable
-                .set("line-height", "36px")           // Vertically center text
-                .set("padding", "0 8px")              // Horizontal padding
+                .set("height", "42px")
+                .set("--lumo-size", "42px")
+                .set("font-size", "12px")
+                .set("line-height", "36px")
+                .set("padding", "0 8px")
                 .set("border", "1px solid #444")
                 .set("border-radius", "4px")
                 .set("background-color", "#1a1a1b")
@@ -860,8 +847,6 @@ public class Media extends VerticalLayout {
         Select<String> select = new Select<>();
         select.setItems("Option 1", "Option 2", "Option 3");
         select.setPlaceholder("Select a forum");
-
-// Set placeholder text color to dull white (gray)
         select.getElement().getStyle().set("--lumo-secondary-text-color", "#ffffff");
 // Update selected forum on change
         forumDropdown.addValueChangeListener(event -> {
@@ -873,7 +858,7 @@ public class Media extends VerticalLayout {
                     Path userForumFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
                     Files.writeString(userForumFile, selectedForum, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                     openPopupButton.setText(selectedForum);
-                    loadPosts();  // if you want to reload posts for the selected forum
+                    loadPosts();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -882,7 +867,7 @@ public class Media extends VerticalLayout {
         Div dropdownWrapper = new Div(forumDropdown);
         dropdownWrapper.getStyle()
                 .set("position", "relative")
-                .set("z-index", "10001");  // Raise stacking context
+                .set("z-index", "10001");
 
         Span buttonText = new Span();
         buttonText.getElement().setProperty("innerHTML", "<div style='padding:8px 16px; line-height:1.3;'>Subscribe to<br>" + forumname + "</div>");
@@ -895,10 +880,10 @@ public class Media extends VerticalLayout {
                 .set("color", "white")
                 .set("border", "1px solid #444")
                 .set("border-radius", "4px")
-                .set("height", "60px")            // ⬅️ increases vertical size
-                .set("white-space", "normal") // allow wrapping
-                .set("word-break", "break-word") // break long words
-                .set("max-width", "200px") // still a max width to prevent layout breakage
+                .set("height", "60px")
+                .set("white-space", "normal")
+                .set("word-break", "break-word")
+                .set("max-width", "200px")
                 .set("padding", "10px 16px")
                 .set("outline", "none")
                 .set("box-shadow", "none");
@@ -908,7 +893,7 @@ public class Media extends VerticalLayout {
             try {
 
                 Path followedForumsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Followed Forums");
-                Files.createDirectories(followedForumsDir);  // Make sure the folder exists
+                Files.createDirectories(followedForumsDir);
 
                 Path forumFile = followedForumsDir.resolve(forumname + ".txt");
                 if (Files.exists(forumFile)) {
@@ -925,15 +910,15 @@ public class Media extends VerticalLayout {
         });
 
         Div spacer = new Div();
-        spacer.setHeightFull();  // takes remaining vertical space
+        spacer.setHeightFull();
         sideBar.setFlexGrow(1, spacer);
 
         Div spacer2 = new Div();
-        spacer.setHeightFull();  // takes remaining vertical space
+        spacer.setHeightFull();
         sideBar.setFlexGrow(1, spacer);
 
         Div spacer3 = new Div();
-        spacer.setHeightFull();  // takes remaining vertical space
+        spacer.setHeightFull();
         sideBar.setFlexGrow(1, spacer);
 // Add all to sidebar
         sideBar.add(
@@ -1011,7 +996,7 @@ public class Media extends VerticalLayout {
                             loadPosts();
 
                             openPopupButton.setText(forumName);
-                            pageSelectionPopup.getStyle().set("display", "none");  // close popup
+                            pageSelectionPopup.getStyle().set("display", "none");
                         });
                         pageListLayout.add(forumButton);
                     }
@@ -1037,7 +1022,7 @@ public class Media extends VerticalLayout {
 
 
 
-// ===== Filler (Overlay) =====
+// filler
         VerticalLayout filler = new VerticalLayout();
         filler.setHeightFull();
         filler.setWidth("200px");
@@ -1047,14 +1032,14 @@ public class Media extends VerticalLayout {
                 .set("bottom", "0")
                 .set("right", "0")
                 .set("background-color", "#1a1a1b")
-                .set("border-left", "1px solid #444"); // Border on the left side
+                .set("border-left", "1px solid #444");
 
-// ===== Content =====
-        layout.add(sideBar, content, filler); // Only content is part of layout flow
-        layout.setFlexGrow(1, content);       // Only content should grow
+// content
+        layout.add(sideBar, content, filler);
+        layout.setFlexGrow(1, content);
 
 // Add overlays after layout
-        add(rootLayout, layout);  // Add overlays separately
+        add(rootLayout, layout);
 
     }
 
@@ -1069,13 +1054,13 @@ public class Media extends VerticalLayout {
                         .map(Path::getFileName)
                         .map(Path::toString)
                         .findFirst()
-                        .orElse("default.png"); // fallback if no file found
+                        .orElse("default.png");
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        return "default.png"; // fallback if folder missing or error
+        return "default.png";
     }
     // Define the Comment Card
     public VerticalLayout createCommentCard(Post postData) {
@@ -1088,11 +1073,11 @@ public class Media extends VerticalLayout {
         commentCardLayout.setPadding(true);
         commentCardLayout.getStyle()
                 .set("border", "1px solid #ccc")
-                .set("border-radius", "10px")  // ✅ add smooth edges
+                .set("border-radius", "10px")
                 .set("padding", "10px")
                 .set("margin", "0")
-                .set("background-color", "#1a1a1b")  // Dark background
-                .set("color", "#ffffff");  // White text
+                .set("background-color", "#1a1a1b")
+                .set("color", "#ffffff");
 
         commentCardLayout.setWidth("800px");
 
@@ -1101,19 +1086,15 @@ public class Media extends VerticalLayout {
         // Get the username from post data
         String username = postData.getUserName();
 
-// Get the avatar image URL for this user (implement this method based on your setup)
         String avatarUrl = "/avatar/" + username + "/" + getAvatarFilenameForUser(username);
 
-// Create avatar without initials but with the user image
         Avatar userAvatar = new Avatar();
-        userAvatar.setImage(avatarUrl);  // Set the user's uploaded image
+        userAvatar.setImage(avatarUrl);
 
-// Style the avatar (white background, black border)
         userAvatar.getStyle()
                 .set("background-color", "white")
                 .set("border", "1px solid #ffffff");
 
-// Username label with white text
         Span userName = new Span(username);
         userName.getStyle()
                 .set("color", "#ffffff")
@@ -1122,17 +1103,13 @@ public class Media extends VerticalLayout {
 
         userName.getElement().addEventListener("click", event -> {
             try {
-                // Username that was clicked
                 String clickedUsername = username;
 
-                // Read logged-in user
                 String currentUsername = Files.readString(Paths.get("loggedinuser.txt")).trim();
 
                 if (clickedUsername.equals(currentUsername)) {
-                    // If clicking own username, write logged-in user
                     Files.writeString(Paths.get("selecteduser.txt"), currentUsername);
                 } else {
-                    // If clicking other user, write their username
                     Files.writeString(Paths.get("selecteduser.txt"), clickedUsername);
                 }
             } catch (IOException ex) {
@@ -1142,20 +1119,17 @@ public class Media extends VerticalLayout {
         });
 
 
-// Post time label with white text
         Span commentTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
         commentTime.getStyle().set("color", "#ffffff");
 
-// Add components to the horizontal layout row
         topRow.add(userAvatar, userName, commentTime);
         topRow.setWidthFull();
         topRow.setJustifyContentMode(JustifyContentMode.START);
         topRow.setAlignItems(Alignment.CENTER);
 
 
-        // Comment content (Textfield for the comment)
         Div commentContent = new Div();
-        commentContent.setWidthFull(); // Make the row take full width
+        commentContent.setWidthFull();
 
         commentContent.getStyle().set("text-align", "left");
         commentContent.getStyle()
@@ -1163,32 +1137,28 @@ public class Media extends VerticalLayout {
                 .set("overflow-wrap", "break-word")
                 .set("word-break", "break-word")
                 .set("max-width", "750px")
-                .set("color", "#ffffff");  // White text
+                .set("color", "#ffffff");
         commentContent.setText(postData.getPostContent());
 
-        // Display number of likes
         HorizontalLayout likesRow = new HorizontalLayout();
         likesRow.setJustifyContentMode(JustifyContentMode.BETWEEN);
         likesRow.setAlignItems(Alignment.CENTER);
         likesRow.getStyle()
-                .set("width", "725px"); // ✅ 700px for comment card
+                .set("width", "725px"); //
 
-        // Likes count
         Span likesCount = new Span("Liked: " + postData.getLikes());
         likesCount.getStyle()
                 .set("font-size", "14px")
                 .set("color", "#ffffff")  // White text
                 .set("white-space", "nowrap");
 
-        // Like button avatar
         LikeButton likeButton = new LikeButton(postData);
         likeButton.getStyle()
-                .set("background-color", "white")  // Avoid dark background affecting the avatar
-                .set("color", "black")  // Ensure the text/initials stay white
-                .set("border", "1px solid #ffffff");  // Optional: add a border to the avatar
+                .set("background-color", "white")
+                .set("color", "black")
+                .set("border", "1px solid #ffffff");
         likesRow.add(likesCount, likeButton);
 
-        // Add everything to the layout
         commentCardLayout.add(topRow, commentContent, likesRow);
 
         UserPost userPostInstance = new UserPost();
@@ -1199,7 +1169,6 @@ public class Media extends VerticalLayout {
 
     // Define the Reply Card
     public VerticalLayout createReplyCard(Post postData) {
-        // Reply card layout container
         VerticalLayout replyCardLayout = new VerticalLayout();
         replyCardLayout.addClassName("hover-card");
 
@@ -1216,7 +1185,6 @@ public class Media extends VerticalLayout {
 
         Post parentPost = UserPost.findPostById(postData.getParentId());
 
-        // 🔝 Parent post info
         HorizontalLayout topRow = new HorizontalLayout();
         String originalUsername = parentPost != null ? parentPost.getUserName() : "Unknown";
         String avatarFilename = getAvatarFilenameForUser(originalUsername);
@@ -1253,7 +1221,7 @@ public class Media extends VerticalLayout {
         topRow.setJustifyContentMode(JustifyContentMode.START);
         topRow.setAlignItems(Alignment.CENTER);
 
-        // 💬 Parent post content
+        //  Parent post content
         Div originalPostContent = new Div();
         originalPostContent.getStyle()
                 .set("white-space", "pre-wrap")
@@ -1267,7 +1235,7 @@ public class Media extends VerticalLayout {
                 .set("color", "#ffffff");
         originalPostContent.setText(parentPost != null ? parentPost.getPostContent() : "Original post not found");
 
-        // ❤️ Likes row for parent post
+        // Likes row for parent post
         HorizontalLayout parentLikesRow = new HorizontalLayout();
         if (parentPost != null) {
             parentLikesRow.setWidth("750px");
@@ -1294,7 +1262,7 @@ public class Media extends VerticalLayout {
             replyCardLayout.add(new UserPost().createReplyInputSection(parentPost));
         }
 
-        // 🔁 Reply meta info
+        // Reply meta info
         HorizontalLayout replyMeta = new HorizontalLayout();
         String replyUsername = postData.getUserName();
         String replyAvatarFilename = getAvatarFilenameForUser(replyUsername);
@@ -1306,7 +1274,7 @@ public class Media extends VerticalLayout {
                 .set("background-color", "white")
                 .set("border", "1px solid #ffffff");
 
-        // 🟢 Small status dot (always online for now)
+        // Small status dot (always online for now)
         Span statusDot = new Span();
         statusDot.getStyle()
                 .set("background-color", "limegreen")
@@ -1345,7 +1313,7 @@ public class Media extends VerticalLayout {
         replyMeta.setAlignItems(Alignment.CENTER);
         replyMeta.getStyle().set("margin-left", "50px");
 
-        // 📝 Reply content
+        // Reply content
         Div replyContent = new Div();
         replyContent.getStyle()
                 .set("white-space", "pre-wrap")
@@ -1356,7 +1324,7 @@ public class Media extends VerticalLayout {
                 .set("color", "#ffffff");
         replyContent.setText(postData.getPostContent());
 
-        // 👍 Likes row for reply post
+        // Likes row for reply post
         HorizontalLayout likesRow = new HorizontalLayout();
         likesRow.setWidth("700px");
         likesRow.setAlignItems(Alignment.CENTER);
@@ -1378,7 +1346,7 @@ public class Media extends VerticalLayout {
         // Add the reply content
         replyCardLayout.add(replyMeta, replyContent, likesRow);
 
-        // 🔽 Reply input section to reply to this *reply*
+        // Reply input section to reply to this *reply*
         replyCardLayout.add(new UserPost().createReplyInputSection(postData));
 
         return replyCardLayout;
@@ -1396,8 +1364,8 @@ public class Media extends VerticalLayout {
         postLayout.getStyle().set("border-radius", "10px");
         postLayout.getStyle().set("padding", "20px");
         postLayout.setWidth("800px");
-        postLayout.getStyle().set("background-color", "#1a1a1b")  // Dark background
-                .set("color", "#ffffff");  // White text
+        postLayout.getStyle().set("background-color", "#1a1a1b")
+                .set("color", "#ffffff");
         postLayout.getStyle().set("padding-top", "10px");
 
         // Get current user
@@ -1407,29 +1375,29 @@ public class Media extends VerticalLayout {
         HorizontalLayout topRow = new HorizontalLayout();
 
 // Build avatar image path
-        String avatarFilename = getAvatarFilenameForUser(currentUsername); // same helper method you already use
+        String avatarFilename = getAvatarFilenameForUser(currentUsername);
         String avatarUrl = "/avatar/" + currentUsername + "/" + avatarFilename;
 
         Avatar avatar = new Avatar();
-        avatar.setImage(avatarUrl); // Use image instead of initials
+        avatar.setImage(avatarUrl);
 
         avatar.getStyle()
                 .set("background-color", "white")
-                .set("border", "1px solid #ffffff");  // Optional styling
+                .set("border", "1px solid #ffffff");
 
 
 
         Span name = new Span(currentUsername);
-        name.getStyle().set("color", "#ffffff");  // White text
+        name.getStyle().set("color", "#ffffff");
         name.getStyle().set("font-weight", "bold");
         topRow.add(avatar, name);
 
         // Second Row: Number of Posts + Likes
         HorizontalLayout statsRow = new HorizontalLayout();
         Span postCount = new Span("Posts: " + user.getPostCount());
-        postCount.getStyle().set("color", "#ffffff");  // White text
+        postCount.getStyle().set("color", "#ffffff");
         Span likeCount = new Span("Likes: " + user.getLikeCount());
-        likeCount.getStyle().set("color", "#ffffff");  // White text
+        likeCount.getStyle().set("color", "#ffffff");
         statsRow.add(postCount, likeCount);
 
         // Third Row: Text Field
@@ -1437,34 +1405,32 @@ public class Media extends VerticalLayout {
         UserPost userPost = new UserPost();
         postArea.getElement().getStyle()
                 .set("background-color", "#1a1a1b")
-                .set("color", "#A0B3B6")             // Soft text color
-                .set("caret-color", "#d3e3fd")       // Slightly bright caret
-                .set("border", "1px solid #6c7a89")  // Rounded border with specified color
-                .set("border-radius", "8px")         // Rounded corners (adjust as needed)
-                .set("padding", "8px");              // Optional: more breathing room
+                .set("color", "#A0B3B6")
+                .set("caret-color", "#d3e3fd")
+                .set("border", "1px solid #6c7a89")
+                .set("border-radius", "8px")
+                .set("padding", "8px");
 
-//#d3e3fd
         userPost.applySimulatedPlaceholder(postArea, "What's on your mind?", "#A0B3B6");
 
         postArea.setWidthFull();
         postArea.setHeight("120px");
-//#6c7a89
         // Fourth Row: Post Button
         Button postButton = new Button("Post", e -> {
             if (!postArea.isEmpty()) {
                 UserPost.createAndSaveNewPost(postArea.getValue());
                 postArea.clear();
-                getUI().ifPresent(ui -> ui.getPage().reload()); // simple reload to refresh posts
+                getUI().ifPresent(ui -> ui.getPage().reload());
             }
         });
 
         postButton.getStyle()
-                .set("background-color", "#E0E0E0")  // light grayish-white
-                .set("color", "#333333")             // dark text for contrast
+                .set("background-color", "#E0E0E0")
+                .set("color", "#333333")
                 .set("border", "none")
                 .set("border-radius", "4px")
                 .set("font-weight", "bold")
-                .set("box-shadow", "none");          // keep it flat (dull look)
+                .set("box-shadow", "none");
 
 
         postLayout.add(topRow, statsRow, postArea, postButton);
@@ -1595,7 +1561,7 @@ public class Media extends VerticalLayout {
 
         postList.setItems(items);
 
-        // --- Here is the list of all forums (folder names) under Forum/ ---
+        // Here is the list of all forums (folder names) under Forum
         Path baseForumPath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum");
         try (Stream<Path> forumFolders = Files.list(baseForumPath)) {
             System.out.println("All available forums:");
@@ -1611,11 +1577,9 @@ public class Media extends VerticalLayout {
     }
 
     private void updateSortButtonHighlight() {
-        // Remove existing highlight
         sortNewButton.removeClassName("popup-hover-item-active");
         sortTopButton.removeClassName("popup-hover-item-active");
 
-        // Apply highlight depending on sortMode
         if (sortMode == 0) {
             sortNewButton.addClassName("popup-hover-item-active");
         } else {
@@ -1655,31 +1619,26 @@ public class Media extends VerticalLayout {
                     .map(path -> path.getFileName().toString())
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            e.printStackTrace(); // Or handle as needed
+            e.printStackTrace();
         }
 
         return forumNames;
     }
     public void loadPostFromNotification(Path notificationFilePath) {
         try {
-            // Step 1: Read notification content
             List<String> lines = Files.readAllLines(notificationFilePath);
             if (lines.size() < 2) {
                 System.err.println("Invalid notification file format.");
                 return;
             }
 
-            // Step 2: Parse the post from line 1
             String postDataLine = lines.get(0).trim();
             Post referencedPost = Post.fromString(postDataLine);
 
-            // Step 3: Extract sender's username
             String senderUsername = referencedPost.getUserName();
 
-            // Step 4: Get post number from line 2
             int postNumber = Integer.parseInt(lines.get(1).trim());
 
-            // Step 5: Path to sender's actual post file
             Path postFilePath = Paths.get("users", senderUsername, "Posts", String.valueOf(postNumber));
 
             if (!Files.exists(postFilePath)) {
@@ -1687,11 +1646,9 @@ public class Media extends VerticalLayout {
                 return;
             }
 
-            // Step 6: Read and parse the actual post
             String actualPostLine = Files.readString(postFilePath).trim();
             Post actualPost = Post.fromString(actualPostLine);
 
-            // Step 7: Create the reply card
             Component replyCard = createReplyCard(actualPost);
             replyCard.getElement().getStyle()
                     .set("margin", "0 auto")
@@ -1700,7 +1657,6 @@ public class Media extends VerticalLayout {
 
             Component inputCard = createPostInputCard();
             styleInputCard(inputCard);
-            // ✅ Step 8: Set postList to contain middleBar, inputCard, and the reply card
             List<Object> items = new ArrayList<>();
             items.add(middleBar);
             items.add(inputCard);
