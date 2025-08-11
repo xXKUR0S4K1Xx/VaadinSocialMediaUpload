@@ -1,8 +1,14 @@
 package org.vaadin.example.social;
-
+import java.util.function.Supplier;
+import java.util.function.Consumer;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.contextmenu.ContextMenu;
+import com.vaadin.flow.component.contextmenu.HasMenuItems;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -13,10 +19,9 @@ import com.vaadin.flow.router.Route;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Route("userpost")
@@ -24,7 +29,7 @@ public class UserPost {
 
     private static final String postsDirectory = "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/posts";
 
-    //  reads posts from the current forum folder of the logged-in user
+
     public static List<Post> readPostsFromFiles() {
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
@@ -35,7 +40,7 @@ public class UserPost {
         return readPostsFromCurrentForum(username);
     }
 
-    // this is kept for compatibility
+    // This is kept for compatibility but not used in current logic
     public static List<Post> readPostsFromFiles(Path directory) {
         List<Post> posts = new ArrayList<>();
 
@@ -97,11 +102,11 @@ public class UserPost {
         return posts;
     }
 
-    // same method name, but now reads posts from the forum folder indicated in user's Forum file
+    // Same method name, but now reads posts from the forum folder indicated in user's Forum file
     public static List<Post> readPostsForUser(String username) {
         List<Post> posts = new ArrayList<>();
 
-        // read the forum name from user's Forum file
+        // Read the forum name from user's Forum file
         Path forumFilePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
         String forumName;
         try {
@@ -119,7 +124,7 @@ public class UserPost {
 
         Path forumPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum", forumName);
 
-        // create forum directory if missing
+        // Create forum directory if missing
         if (!Files.exists(forumPostsDir)) {
             try {
                 Files.createDirectories(forumPostsDir);
@@ -130,7 +135,7 @@ public class UserPost {
             }
         }
 
-        // read posts from forum posts directory
+        // Read posts from forum posts directory
         try {
             Files.list(forumPostsDir)
                     .filter(Files::isRegularFile)
@@ -177,7 +182,7 @@ public class UserPost {
         return posts;
     }
 
-    // helper method used by readPostsFromFiles()
+    // Helper method used by readPostsFromFiles()
     private static List<Post> readPostsFromCurrentForum(String username) {
         return readPostsForUser(username);
     }
@@ -185,7 +190,7 @@ public class UserPost {
         return readPostsSortedByLikes(Paths.get(postsDirectory));
     }
 
-    // trying overloaded version with Path argument (edit: yay it works)
+    // Overloaded version with Path argument
     public static List<Post> readPostsSortedByLikes(Path directory) {
         List<Post> posts = new ArrayList<>();
 
@@ -232,7 +237,7 @@ public class UserPost {
             e.printStackTrace();
         }
 
-        // sort by likes descending
+        // Sort by likes descending
         posts.sort((p1, p2) -> Integer.compare(p2.getLikes(), p1.getLikes()));
 
         return posts;
@@ -286,7 +291,7 @@ public class UserPost {
             e.printStackTrace();
         }
 
-        // ✅ Sort by likes descending
+        //  Sort by likes descending
         posts.sort((p1, p2) -> Integer.compare(p2.getLikes(), p1.getLikes()));
 
         return posts;
@@ -296,7 +301,7 @@ public class UserPost {
 
     //Aktualisiert einen bestehenden Post und speichert alle Posts neu in den Dateien.
     public static void savePost(Post updatedPost) {
-        // get current user
+        // Get current user
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
             System.err.println("No logged-in user found.");
@@ -304,10 +309,10 @@ public class UserPost {
         }
         String username = currentUser.getUsername();
 
-        // read posts from current user's forum folder
+        // Read posts from current user's forum folder
         List<Post> posts = readPostsForUser(username);
 
-        // update the post in the list
+        // Update the post in the list
         for (int i = 0; i < posts.size(); i++) {
             if (posts.get(i).getPostId().equals(updatedPost.getPostId())) {
                 posts.set(i, updatedPost); // Replace the old one
@@ -315,7 +320,8 @@ public class UserPost {
             }
         }
 
-        // get forum name from user's Forum file
+        // Save all posts back to the current forum posts directory
+        // Get forum name from user's Forum file
         Path forumFilePath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Forum");
         String forumName;
         try {
@@ -342,7 +348,7 @@ public class UserPost {
             }
         }
 
-        // save updated posts to forum posts directory
+        // Save updated posts to forum posts directory
         for (Post post : posts) {
             try {
                 Path postFile = forumPostsDir.resolve(post.getPostId());
@@ -352,11 +358,13 @@ public class UserPost {
                 e.printStackTrace();
             }
         }
+
+        // Also save the post in the user's personal directory (your existing method)
         savePostToUserDirectory(updatedPost, true);
     }
 
 
-    // create the UI component for replying to a post
+    // Create the UI component for replying to a post
     public Component createReplyInputSection(Post parentPost) {
         VerticalLayout replySection = new VerticalLayout();
         replySection.setSpacing(false);
@@ -372,13 +380,13 @@ public class UserPost {
                 .set("padding", "0")
                 .set("font-size", "14px");
 
-        // layout for icon + reply button
+        // Layout for icon + reply button
         HorizontalLayout replyButtonRow = new HorizontalLayout(replyButton);
         replyButtonRow.setSpacing(false);
         replyButtonRow.getStyle().set("gap", "5px"); // manually set small gap
         replyButtonRow.setAlignItems(Alignment.CENTER);
 
-        // reply input section
+        // Reply input section
         HorizontalLayout inputRow = new HorizontalLayout();
         inputRow.setVisible(false);
         inputRow.setWidthFull();
@@ -398,12 +406,12 @@ public class UserPost {
 
         Button sendButton = new Button("Send");
         sendButton.getStyle()
-                .set("background-color", "#E0E0E0")  // light grayish-white
-                .set("color", "#333333")             // dark text for contrast
+                .set("background-color", "#E0E0E0")
+                .set("color", "#333333")
                 .set("border", "none")
                 .set("border-radius", "4px")
                 .set("font-weight", "bold")
-                .set("box-shadow", "none");          // keep it flat (dull look)
+                .set("box-shadow", "none");
         inputRow.add(replyField, sendButton);
 
         replyButton.addClickListener(e -> inputRow.setVisible(!inputRow.isVisible()));
@@ -426,13 +434,13 @@ public class UserPost {
 
 
 
-    // creates reply
+    // Erstellt eine Antwort (Reply) auf einen bestehenden Post.
     public static void createAndSaveReply(Post parentPost, String replyContent) {
         if (replyContent == null || replyContent.trim().isEmpty()) {
             return; // Don't create a post if the content is empty
         }
 
-        // get current user
+        // Get current user
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
             System.err.println("No logged-in user found.");
@@ -440,11 +448,11 @@ public class UserPost {
         }
         String currentUserName = currentUser.getUsername();
 
-        // time
+        // Get current time in seconds
         long currentTimeInSeconds = System.currentTimeMillis() / 1000;
         String formattedTimestamp = Post.formatTimestamp(String.valueOf(currentTimeInSeconds));
 
-        // Find the highest postId in the user's forum folder to generate a new unique ID
+        // Find the maximum postId in the user's forum folder to generate a new unique ID
         String forumName = getUserForumName(currentUserName);
         if (forumName == null) {
             System.err.println("Could not find forum name for user " + currentUserName);
@@ -466,18 +474,20 @@ public class UserPost {
                 ""                             // likedUsers
         );
 
+        // Save the new reply post
         saveNewPost(newReply, true); // true means it is a reply, so no post count increment
 
-        // notify the user who owns the parent post about the new reply, if different from current user
+        // --- ADD NOTIFICATION HERE ---
+        // Notify the user who owns the parent post about the new reply, if different from current user
         if (!currentUserName.equals(parentPost.getUserName())) {
-            UserPost.createNotificationForUser(parentPost.getUserName(), replyContent);
+            UserPost.createNotificationForUser(parentPost.getUserName(), currentUserName);
         }
     }
 
 
-    // speichert neuen Post oder Reply als Datei.
+    // Speichert einen neuen Post oder Reply als Datei.
     public static void saveNewPost(Post newPost, boolean isReply) {
-        // get forum folder for user
+        // Get forum folder for user
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
             System.err.println("No logged-in user found.");
@@ -493,17 +503,17 @@ public class UserPost {
         Path forumPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum", forumName);
 
         try {
-            // create forum folder if not exist
+            // Create forum folder if not exist
             if (!Files.exists(forumPostsDir)) {
                 Files.createDirectories(forumPostsDir);
             }
-            // save to forum directory
+            // Save to forum directory
             Files.write(forumPostsDir.resolve(newPost.getPostId()), newPost.toString().getBytes());
 
-            // save to user-specific folder
+            // Save to user-specific folder
             savePostToUserDirectory(newPost, false); // false because it's a new post, not overwrite
 
-            // only update post count if it's a new post (not reply)
+            // Only update post count if it's a top-level post (not reply)
             if (!isReply) {
                 updateUserPosts(newPost.getUserName());
             }
@@ -523,7 +533,7 @@ public class UserPost {
         return null;
     }
 
-    // erhöht Post-Zähler des Benutzers wenn er einen neuen Post (kein Reply) erstellt.
+    // Erhöht den Post-Zähler eines Benutzers, wenn dieser einen neuen Post (kein Reply) erstellt.
     private static void updateUserPosts(String username) {
         File userDirectory = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users");
 
@@ -559,9 +569,9 @@ public class UserPost {
         }
     }
 
-    // erstellt neuen Post (kein Reply) und speichert den
+    // Erstellt einen ganz neuen Post (kein Reply) und speichert ihn.
     public static Post createAndSaveNewPost(String postContent) {
-        //current user
+        // Get current user
         User currentUser = User.getCurrentUser();
         if (currentUser == null) {
             System.err.println("No logged-in user found.");
@@ -569,7 +579,7 @@ public class UserPost {
         }
         String currentUserName = currentUser.getUsername();
 
-        // forum name und post directory
+        // Get forum name and posts directory
         String forumName = getUserForumName(currentUserName);
         if (forumName == null) {
             System.err.println("Could not find forum name for user " + currentUserName);
@@ -579,14 +589,14 @@ public class UserPost {
 
         int nextId = getNextPostId(forumPostsDir);
 
-        // current timee
+        // Get current time in seconds
         long currentTimeInSeconds = System.currentTimeMillis() / 1000;
         String formattedTimestamp = Post.formatTimestamp(String.valueOf(currentTimeInSeconds));
 
         // Create the new post
         Post newPost = new Post(
                 String.valueOf(nextId),   // postId
-                "0",                     // parentId
+                "0",                     // parentId (top-level)
                 0,                       // likes
                 "",                      // parentUser
                 postContent,             // postContent
@@ -741,26 +751,6 @@ public class UserPost {
 
     public void applySimulatedPlaceholder(TextArea area, String placeholderText, String inputColor) {
         simulatePlaceholder(area, placeholderText);
-        // Optionally you can add more styling or logic here using inputColor
-    }
-    public void addNotification(String previewText) {
-        try {
-            String username = User.getCurrentUser().getUsername();
-            Path notifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "notifications");
-
-            if (!Files.exists(notifDir)) {
-                Files.createDirectories(notifDir);
-            }
-
-            long count = Files.list(notifDir)
-                    .filter(p -> p.getFileName().toString().endsWith(".txt"))
-                    .count();
-
-            Path newFile = notifDir.resolve((count + 1) + ".txt");
-            Files.writeString(newFile, previewText, StandardOpenOption.CREATE);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public void updateNotificationNumber() {
@@ -779,57 +769,75 @@ public class UserPost {
         }
     }
 
-    public List<String> getNotificationPreviews() {
-        try {
-            String username = User.getCurrentUser().getUsername();
-            Path notifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "notifications");
+    private static List<String> filenames = new ArrayList<>();
 
-            if (!Files.exists(notifDir)) return List.of();
+    public static List<String> getNotificationPreviews(String username) {
+        List<String> previews = new ArrayList<>();
+        filenames.clear();
 
-            return Files.list(notifDir)
+        Path notifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "Notifications");
+
+        if (!Files.exists(notifDir)) {
+            return previews;
+        }
+
+        try (Stream<Path> paths = Files.list(notifDir)) {
+            List<Path> notifFiles = paths
                     .filter(p -> p.getFileName().toString().endsWith(".txt"))
-                    .sorted()
-                    .map(path -> {
-                        try {
-                            return Files.readString(path);
-                        } catch (IOException e) {
-                            return "";
-                        }
-                    }).toList();
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString().replace(".txt", "")))
+                    .toList();
+
+            for (Path notifFile : notifFiles) {
+                filenames.add(notifFile.getFileName().toString()); // Store for deletion
+
+                String preview = "No content";
+                try {
+                    List<String> lines = Files.readAllLines(notifFile);
+                    if (!lines.isEmpty()) {
+                        String fullPostLine = lines.get(0).trim();
+                        String[] parts = fullPostLine.split("#");
+                        String content = parts.length > 4 ? parts[4] : "No content";
+
+                        String[] words = content.split("\\s+");
+                        preview = String.join(" ", Arrays.copyOfRange(words, 0, Math.min(40, words.length)));
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                previews.add(preview);
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
-            return List.of();
         }
+
+        return previews;
     }
 
-    public void deleteNotificationByPreview(String preview) {
+
+    /**
+     * Deletes notification file by filename for the current user.
+     */
+    public void deleteNotificationByFilename(String filename) {
         try {
             String username = User.getCurrentUser().getUsername();
             Path notifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username, "notifications");
 
-            Files.list(notifDir)
-                    .filter(p -> {
-                        try {
-                            return Files.readString(p).equals(preview);
-                        } catch (IOException e) {
-                            return false;
-                        }
-                    })
-                    .findFirst()
-                    .ifPresent(path -> {
-                        try {
-                            Files.delete(path);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    });
-
+            Path notifFile = notifDir.resolve(filename);
+            if (Files.exists(notifFile)) {
+                Files.delete(notifFile);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
+    public static List<String> getNotificationFilenames() {
+        return filenames;
+    }
+    /**
+     * Renumbers all notification files sequentially (1.txt, 2.txt, ...).
+     */
     public void renumberNotifications() {
         try {
             String username = User.getCurrentUser().getUsername();
@@ -846,43 +854,121 @@ public class UserPost {
                 Files.move(file, newPath, StandardCopyOption.REPLACE_EXISTING);
                 index++;
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-    public static void createNotificationForUser(String recipientUsername, String content) {
-        try {
-            Path userNotifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
-                    recipientUsername, "Notifications");
 
-            if (!Files.exists(userNotifDir)) {
-                Files.createDirectories(userNotifDir);
+    /**
+     * Creates a notification for recipientUsername by writing a new text file
+     * containing the path to the sender’s last post.
+     *
+     /**
+     * Creates a notification for recipientUsername by reading the full post line from senderUsername's post with given postId,
+     * then writing a notification file containing that full post line.
+     *
+     * @param recipientUsername the user receiving the notification
+     * @param senderUsername the user who wrote the post
+     */
+    //MADE WITH CHATGPT. DONT DELETE UNTIL I UNDERSTAND IT
+    public static void createNotificationForUser(String recipientUsername, String senderUsername) {
+        try {
+            System.out.println("=== DEBUG: Starting createNotificationForUser ===");
+            System.out.println("Recipient: " + recipientUsername);
+            System.out.println("Sender: " + senderUsername);
+
+            Path senderPostsDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    senderUsername, "Posts");
+
+            if (!Files.exists(senderPostsDir)) {
+                System.err.println("Sender posts directory does not exist: " + senderPostsDir);
+                return;
             }
 
-            // Count current notifications (1-based numbering)
-            int fileCount = (int) Files.list(userNotifDir)
+            // Find latest post file from sender
+            Optional<Path> lastPostFile = Files.list(senderPostsDir)
+                    .filter(p -> p.getFileName().toString().matches("\\d+"))
+                    .sorted(Comparator.comparingInt(p -> Integer.parseInt(p.getFileName().toString())))
+                    .reduce((first, second) -> second); // get last file
+
+            if (lastPostFile.isEmpty()) {
+                System.err.println("No posts found for sender: " + senderUsername);
+                return;
+            }
+
+            String fullPostLine = Files.readString(lastPostFile.get()).trim();
+            System.out.println("Found sender's last post: " + fullPostLine);
+
+            // Get sender's post number (from file name)
+            int senderPostNumber = Integer.parseInt(lastPostFile.get().getFileName().toString());
+            System.out.println("Sender's latest post number: " + senderPostNumber);
+
+            // Write notification
+            Path recipientNotifDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    recipientUsername, "Notifications");
+            if (!Files.exists(recipientNotifDir)) {
+                Files.createDirectories(recipientNotifDir);
+            }
+
+            int notifFileNumber = (int) Files.list(recipientNotifDir)
                     .filter(p -> p.getFileName().toString().endsWith(".txt"))
-                    .count();
+                    .count() + 1;
 
-            int nextNumber = fileCount + 1;
+            Path notifFile = recipientNotifDir.resolve(notifFileNumber + ".txt");
+            List<String> lines = List.of(fullPostLine, String.valueOf(senderPostNumber));
+            Files.write(notifFile, lines);
 
-            // Trim content to a short preview
-            String preview = content.length() > 20 ? content.substring(0, 20) + "..." : content;
+            // Update NotificationNumber
+            Path notifCountFile = recipientNotifDir.resolveSibling("NotificationNumber");
+            Files.writeString(notifCountFile, String.valueOf(notifFileNumber),
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-            // Write new notification file
-            Path notifFile = userNotifDir.resolve(nextNumber + ".txt");
-            Files.writeString(notifFile, preview);
-
-            // Update NotificationNumber file
-            Path notifCountFile = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
-                    recipientUsername, "NotificationNumber");
-
-            Files.writeString(notifCountFile, String.valueOf(nextNumber), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            System.out.println("Notification file created: " + notifFile);
+            System.out.println("=== DEBUG: End createNotificationForUser ===");
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    public void buildNotificationMenu(ContextMenu notificationMenu, Media mediaInstance) {
+        String username = mediaInstance.getLoggedInUsername();
+        List<String> previews = getNotificationPreviews(username);
+        List<String> filenames = getNotificationFilenames();
 
+        for (int i = 0; i < previews.size(); i++) {
+            String preview = previews.get(i);
+            String filename = filenames.get(i);
+
+            notificationMenu.addItem(preview, click -> {
+                Path notifPath = Paths.get("users", username, "Notifications", filename);
+
+                mediaInstance.loadPostFromNotification(notifPath);
+
+                deleteNotificationByFilename(filename);
+                renumberNotifications();
+                updateNotificationNumber();
+
+                UI.getCurrent().navigate("media");
+            });
+        }
+    }
+    public void showNotificationCount(Span notificationCountSpan) {
+        try {
+            String username = User.getCurrentUser().getUsername();
+            Path notifCountFile = Paths.get(
+                    "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    username,
+                    "NotificationNumber"
+            );
+
+            String count = "0";
+            if (Files.exists(notifCountFile)) {
+                count = Files.readString(notifCountFile);
+            }
+
+            notificationCountSpan.setText(count);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

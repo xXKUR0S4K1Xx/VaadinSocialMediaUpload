@@ -136,6 +136,24 @@ public class Post {
                 likedUsers == null ? "" : likedUsers
         );
     }
+    public static Post fromString(String line) {
+        String[] parts = line.split("#", -1);  // -1 to preserve trailing empty strings
+
+        if (parts.length < 8) {
+            throw new IllegalArgumentException("Invalid post format: " + line);
+        }
+
+        String postId = parts[0];
+        String parentId = parts[1];
+        int likes = Integer.parseInt(parts[2]);
+        String parentUser = parts[3];
+        String postContent = decodeContent(parts[4]);
+        String timestamp = parts[5];
+        String userName = parts[6];
+        String likedUsers = parts[7];
+
+        return new Post(postId, parentId, likes, parentUser, postContent, timestamp, userName, likedUsers);
+    }
 
 
 }
