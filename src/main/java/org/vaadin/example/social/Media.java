@@ -1034,6 +1034,54 @@ public class Media extends VerticalLayout {
                 .set("background-color", "#1a1a1b")
                 .set("border-left", "1px solid #444");
 
+        // Create inner vertical layout inside filler
+        VerticalLayout innerLayout = new VerticalLayout();
+        innerLayout.setWidthFull();
+        innerLayout.setPadding(false);
+        innerLayout.setSpacing(true);
+        innerLayout.setAlignItems(Alignment.CENTER);
+
+// 1. Div to show forumName (using a simple Label with styling)
+        Div forumNameDiv = new Div();
+        forumNameDiv.setText(forumname);
+        forumNameDiv.getStyle()
+                .set("font-weight", "bold")
+                .set("font-size", "1.2em")
+                .set("color", "white");
+
+// 2. Read-only TextField to display forumName (user cannot edit)
+        forumNameField.setValue(forumname);
+        forumNameField.setReadOnly(true);
+        forumNameField.setWidthFull();
+
+// 3. Check if user is admin by verifying if the folder exists
+        boolean isAdmin = false;
+        try {
+            Path adminPath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    username, "Administrator", forumname);
+            System.out.println("Checking admin folder exists: " + adminPath.toString());
+            System.out.println("Exists: " + Files.exists(adminPath));
+            System.out.println("Is directory: " + Files.isDirectory(adminPath));
+            isAdmin = Files.exists(adminPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+// 4. If admin, add Edit button below
+        Button editButton = new Button("Edit", event -> {
+            getUI().ifPresent(ui -> ui.navigate("admin"));
+        });
+        editButton.setVisible(isAdmin);
+
+// Add components to inner layout
+        innerLayout.add(forumNameDiv, forumNameField);
+        if (isAdmin) {
+            innerLayout.add(editButton);
+        }
+
+// Finally, add the inner layout to your filler layout
+        filler.add(innerLayout);
+
 // content
         layout.add(sideBar, content, filler);
         layout.setFlexGrow(1, content);

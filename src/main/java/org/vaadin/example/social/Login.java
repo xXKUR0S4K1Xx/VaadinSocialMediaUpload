@@ -153,30 +153,44 @@ public class Login extends VerticalLayout {
                 try {
                     Path userDir = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users", username);
 
-                    // Ordner anlegen falls nötig
+                    // Create main user directory if it doesn't exist
                     if (!Files.exists(userDir)) {
                         Files.createDirectories(userDir);
                     }
 
-                    // Forum-Datei erstellen
+                    // Create Forum file with default content "all"
                     Path forumFile = userDir.resolve("Forum");
                     if (!Files.exists(forumFile)) {
                         Files.writeString(forumFile, "all", StandardCharsets.UTF_8);
                     }
 
-                    // Followed Forums Ordner und Datei anlegen
+                    // Create Followed Forums directory and default file
                     Path followedForumsDir = userDir.resolve("Followed Forums");
                     if (!Files.exists(followedForumsDir)) {
                         Files.createDirectories(followedForumsDir);
-                    }
-                    Path notificationsDir = userDir.resolve("Notifications");
-                    if (!Files.exists(notificationsDir)) {
-                        Files.createDirectories(notificationsDir);
                     }
                     Path allFile = followedForumsDir.resolve("all");
                     if (!Files.exists(allFile)) {
                         Files.writeString(allFile, "all", StandardCharsets.UTF_8);
                     }
+
+                    // Create Notifications directory
+                    Path notificationsDir = userDir.resolve("Notifications");
+                    if (!Files.exists(notificationsDir)) {
+                        Files.createDirectories(notificationsDir);
+                    }
+
+                    // **Create Administrator and Moderator folders**
+                    Path adminDir = userDir.resolve("Administrator");
+                    if (!Files.exists(adminDir)) {
+                        Files.createDirectories(adminDir);
+                    }
+
+                    Path moderatorDir = userDir.resolve("Moderator");
+                    if (!Files.exists(moderatorDir)) {
+                        Files.createDirectories(moderatorDir);
+                    }
+
                 } catch (IOException e) {
                     e.printStackTrace();
                     Notification error = new Notification("Error creating user folders/files!", 3000);
@@ -194,6 +208,7 @@ public class Login extends VerticalLayout {
                 error.open();
             }
         });
+
 
 
 
