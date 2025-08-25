@@ -1,5 +1,13 @@
 package org.vaadin.example.social;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.treegrid.TreeGrid;
+import com.vaadin.flow.router.Route;
 
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
@@ -18,12 +26,14 @@ import com.vaadin.flow.component.popover.Popover;
 import com.vaadin.flow.component.popover.PopoverPosition;
 import com.vaadin.flow.component.popover.PopoverVariant;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.server.VaadinSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +42,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Route("admin")
@@ -353,6 +364,7 @@ public class AdminSettings extends VerticalLayout {
         rootLayout.setFlexGrow(1, leftLayout, centerLayout, rightLayout);
 
 
+
         // Virtual List of posts
         postList = new VirtualList<>();
         postList.getElement().getStyle().set("scrollbar-gutter", "stable both-edges");  // Ensures the scrollbar appears on both edges.
@@ -362,7 +374,7 @@ public class AdminSettings extends VerticalLayout {
 
         // Create list: first the post input card, then the posts
         VirtualList<Component> postList = new VirtualList<>();
-        postList.setItems(List.of(createAvatarSelectionCard()));  // Only one item in the list
+        postList.setItems(List.of(createForumTreeComponent()));
         postList.setRenderer(new ComponentRenderer<>(component -> component));  // Single renderer
 
         postList.setWidthFull();   // Take full available width
@@ -524,7 +536,95 @@ public class AdminSettings extends VerticalLayout {
 
         return card;
     }
+    private Component createForumTreeComponent() {
+        Path forumsPath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum");
+        System.out.println("Building forum structure from path: " + forumsPath);
 
+        // Create TreeGrid
+        TreeGrid<TreeTest.Node> treeGrid = new TreeGrid<>();
+        treeGrid.addHierarchyColumn(TreeTest.Node::getName).setHeader("Forum Structure");
+        treeGrid.setWidthFull();
+        treeGrid.setHeight("700px");
+
+        // Build forum structure
+        List<TreeTest.Node> forumNodes = new ArrayList<>();
+        try {
+            forumNodes = Files.list(forumsPath)
+                    .filter(Files::isDirectory)
+                    .map(forumFolder -> {
+                        System.out.println("\nProcessing forum folder: " + forumFolder.getFileName());
+                        TreeTest.Node forumNode = new TreeTest.Node(forumFolder.getFileName().toString());
+
+                        // Process Admin folder (second level)
+                        Path adminPath = forumFolder.resolve("Admin");
+                        if (Files.exists(adminPath) && Files.isDirectory(adminPath)) {
+                            TreeTest.Node adminNode = new TreeTest.Node("Admin");
+
+                            // Process subfolders in Admin
+                            processSubfolders(adminPath, adminNode);
+
+                            // Process Moderator folder (third level under Admin)
+                            Path moderatorPath = adminPath.resolve("Moderator");
+                            if (Files.exists(moderatorPath) && Files.isDirectory(moderatorPath)) {
+                                TreeTest.Node moderatorNode = new TreeTest.Node("Moderator");
+
+                                // Process subfolders in Moderator
+                                processSubfolders(moderatorPath, moderatorNode);
+
+                                adminNode.getChildren().add(moderatorNode);
+                            }
+
+                            forumNode.getChildren().add(adminNode);
+                        }
+
+                        System.out.println("Final forum node: " + forumNode.getName() +
+                                " has " + forumNode.getChildren().size() + " children");
+                        return forumNode;
+                    })
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            System.err.println("Error reading forums directory: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        // Debug the complete node structure
+        System.out.println("\nFinal node structure:");
+        forumNodes.forEach(this::printNodeStructure);
+
+        // Set items and expand
+        treeGrid.setItems(forumNodes, TreeTest.Node::getChildren);
+        expandAllNodes(treeGrid, forumNodes);
+
+        return treeGrid;
+    }
+
+    // Unified method to process subfolders
+    private void processSubfolders(Path parentPath, TreeTest.Node parentNode) {
+        try {
+            Files.list(parentPath)
+                    .filter(Files::isDirectory)
+                    .forEach(subfolder -> {
+                        TreeTest.Node subfolderNode = new TreeTest.Node(subfolder.getFileName().toString());
+                        System.out.println("  Processing subfolder: " + subfolderNode.getName());
+
+                        // Recursively process any nested subfolders
+                        processSubfolders(subfolder, subfolderNode);
+
+                        parentNode.getChildren().add(subfolderNode);
+                    });
+        } catch (IOException e) {
+            System.err.println("Error reading subfolders: " + e.getMessage());
+        }
+    }
+
+    private void expandAllNodes(TreeGrid<TreeTest.Node> treeGrid, List<TreeTest.Node> nodes) {
+        nodes.forEach(node -> {
+            treeGrid.expand(node);
+            if (!node.getChildren().isEmpty()) {
+                expandAllNodes(treeGrid, node.getChildren());
+            }
+        });
+    }
     private String getLoggedInUsername() {
         try {
             return java.nio.file.Files.readString(java.nio.file.Paths.get("loggedinuser.txt")).trim();
@@ -533,5 +633,65 @@ public class AdminSettings extends VerticalLayout {
             return "unknown";
         }
     }
+    // Represents either a Forum (with children) or an Admin user (no children)
+    private void processFiles(Path folderPath, TreeTest.Node parentNode) {
+        try {
+            Files.list(folderPath)
+                    .filter(Files::isRegularFile)
+                    .forEach(file -> {
+                        TreeTest.Node fileNode = new TreeTest.Node(file.getFileName().toString());
+                        parentNode.getChildren().add(fileNode);
+                        System.out.println("  Added file: " + fileNode.getName());
+                    });
+        } catch (IOException e) {
+            System.err.println("Error reading files: " + e.getMessage());
+        }
+    }
 
+    private void processModeratorSubfolders(Path moderatorPath, TreeTest.Node moderatorNode) {
+        try {
+            Files.list(moderatorPath)
+                    .filter(Files::isDirectory)
+                    .forEach(subfolder -> {
+                        TreeTest.Node subfolderNode = new TreeTest.Node(subfolder.getFileName().toString());
+                        System.out.println("  Processing Moderator subfolder: " + subfolderNode.getName());
+
+                        // Add files from subfolder
+                        processFiles(subfolder, subfolderNode);
+
+                        moderatorNode.getChildren().add(subfolderNode);
+                    });
+        } catch (IOException e) {
+            System.err.println("Error reading Moderator subfolders: " + e.getMessage());
+        }
+    }
+
+    private void printNodeStructure(TreeTest.Node node, String indent) {
+        System.out.println(indent + node.getName() +
+                " (children: " + node.getChildren().size() + ")");
+        node.getChildren().forEach(child -> printNodeStructure(child, indent + "  "));
+    }
+
+    private void printNodeStructure(TreeTest.Node node) {
+        printNodeStructure(node, "");
+    }
+
+    public static class Node {
+        private String name;
+        private List<TreeTest.Node> children;
+
+        public Node(String name) {
+            this.name = name;
+            this.children = new ArrayList<>();
+            System.out.println("Created node: " + name);
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public List<TreeTest.Node> getChildren() {
+            return children;
+        }
+    }
 }
