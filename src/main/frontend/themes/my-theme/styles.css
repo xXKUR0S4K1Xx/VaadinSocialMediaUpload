@@ -276,3 +276,37 @@ html, body {
 /* Optional hover/selected */
 .admin-treegrid::part(row):hover { background-color: #2a2a2b; }
 .admin-treegrid::part(row[selected]) { background-color: #3a3a3b; color: #fff; }
+
+/* Reddit-style dark grid */
+.my-dark-grid {
+    --lumo-base-color: #1a1a1b;   /* Reddit dark gray background */
+    --lumo-body-text-color: #d7dadc; /* Reddit light gray text */
+    background-color: #1a1a1b;
+    color: #d7dadc;
+    border: 1px solid #343536;
+    border-radius: 6px;
+}
+
+/* Header */
+.my-dark-grid::part(header-cell) {
+    background-color: #272729;   /* slightly lighter for header row */
+    color: #ffffff;              /* pure white header text */
+    font-weight: bold;
+}
+
+/* Make gridlines visible */
+.my-dark-grid::part(cell) {
+    border-bottom: 1px solid #ffffff33; /* semi-transparent white line */
+    background-color: #1a1a1b;
+    color: #d7dadc;
+}
+
+/* Optional: vertical gridlines too */
+.my-dark-grid::part(body-cell) {
+    border-right: 1px solid #ffffff33; /* subtle vertical lines */
+}
+
+/* Row hover */
+.my-dark-grid::part(row):hover {
+    background-color: #2a2a2c;   /* subtle hover effect */
+}

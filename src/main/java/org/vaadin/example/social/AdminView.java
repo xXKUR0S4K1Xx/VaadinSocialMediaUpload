@@ -1,6 +1,12 @@
 package org.vaadin.example.social;
 import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.server.StreamResource;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.Avatar;
@@ -354,8 +360,7 @@ public class AdminView extends VerticalLayout {
         rootLayout.add(leftLayout, centerLayout, rightLayout);
         rootLayout.setFlexGrow(1, leftLayout, centerLayout, rightLayout);
 
-
-// Create the TreeGrid
+// --- TreeGrid for forums ---
         TreeGrid<Path> treeGrid = new TreeGrid<>();
         treeGrid.addClassName("admin-treegrid"); // custom class for CSS
 
@@ -421,22 +426,60 @@ public class AdminView extends VerticalLayout {
 
 // --- Users Grid ---
         Grid<User> usersGrid = new Grid<>(User.class, false); // don't auto-generate columns
+        usersGrid.addClassName("my-dark-grid");  // applies the CSS styling
+
+// Base path: dynamic, relative to the current system user
+        String basePath = System.getProperty("user.home")
+                + "/IdeaProjects/VaadinSocialMediaUpload/users";
 
 // Column: Username
         usersGrid.addColumn(User::getUsername).setHeader("User");
 
+// Column: Avatar (second column)
+        usersGrid.addComponentColumn(user -> {
+            File avatarFolder = new File(basePath + "/" + user.getUsername() + "/Avatar");
+            if (avatarFolder.exists() && avatarFolder.isDirectory()) {
+                File[] avatars = avatarFolder.listFiles();
+                if (avatars != null && avatars.length > 0) {
+                    // pick the newest avatar file
+                    File avatarFile = Arrays.stream(avatars)
+                            .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()))
+                            .orElse(avatars[0]);
+                    StreamResource resource = new StreamResource(
+                            avatarFile.getName(),
+                            () -> {
+                                try {
+                                    return new FileInputStream(avatarFile);
+                                } catch (FileNotFoundException e) {
+                                    e.printStackTrace();
+                                    return null;
+                                }
+                            }
+                    );
+                    Image avatar = new Image(resource, "avatar");
+                    avatar.setWidth("50px");
+                    avatar.setHeight("50px");
+                    avatar.getStyle().set("border-radius", "50%"); // round avatar
+                    return avatar;
+                }
+            }
+            // Fallback if no avatar found
+            Image placeholder = new Image();
+            placeholder.setWidth("50px");
+            placeholder.setHeight("50px");
+            return placeholder;
+        }).setHeader("Avatar");
+
 // Column: Admin? Yes/No
         usersGrid.addColumn(user -> {
-            File adminFolder = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users/"
-                    + user.getUsername() + "/Administrator");
+            File adminFolder = new File(basePath + "/" + user.getUsername() + "/Administrator");
             return (adminFolder.exists() && adminFolder.isDirectory()
                     && Objects.requireNonNull(adminFolder.listFiles()).length > 0) ? "Yes" : "No";
         }).setHeader("Admin");
 
 // Column: Last post number
         usersGrid.addColumn(user -> {
-            File postsFolder = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users/"
-                    + user.getUsername() + "/Posts");
+            File postsFolder = new File(basePath + "/" + user.getUsername() + "/Posts");
             int lastPostNumber = 0;
             if (postsFolder.exists() && postsFolder.isDirectory()) {
                 File[] posts = postsFolder.listFiles(File::isFile);
@@ -455,7 +498,7 @@ public class AdminView extends VerticalLayout {
         }).setHeader("Posts");
 
 // Load all users from folder
-        File usersFolder = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users");
+        File usersFolder = new File(basePath);
         List<User> allUsers = new ArrayList<>();
         for (File userDir : Objects.requireNonNull(usersFolder.listFiles(File::isDirectory))) {
             User user = User.loadFromFile(userDir.getName());
@@ -468,7 +511,7 @@ public class AdminView extends VerticalLayout {
 // Optional: size
         usersGrid.setWidthFull();
         usersGrid.setHeight("400px");
-        usersGrid.getStyle().set("margin-top", "20px"); // 20px spacing
+        usersGrid.getStyle().set("margin-top", "20px"); // spacing below TreeGrid
 
 // Add Users Grid to content below TreeGrid
         content.add(usersGrid);
@@ -476,6 +519,8 @@ public class AdminView extends VerticalLayout {
 
 // Add content to AdminView layout
         add(content);
+
+
 
 
         HorizontalLayout layout = new HorizontalLayout();
