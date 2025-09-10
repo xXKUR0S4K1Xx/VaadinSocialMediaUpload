@@ -42,7 +42,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Stream;
 
-@Route("admin")  // Defines the route for this view. When navigating to '/media', this view is displayed.
+@Route("adminview")  // Defines the route for this view. When navigating to '/media', this view is displayed.
 public class AdminView extends VerticalLayout {
     private static final Logger log = LoggerFactory.getLogger(Media.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
 
@@ -359,7 +359,6 @@ public class AdminView extends VerticalLayout {
         // Add all sub-layouts to root
         rootLayout.add(leftLayout, centerLayout, rightLayout);
         rootLayout.setFlexGrow(1, leftLayout, centerLayout, rightLayout);
-
 // --- TreeGrid for forums ---
         TreeGrid<Path> treeGrid = new TreeGrid<>();
         treeGrid.addClassName("admin-treegrid"); // custom class for CSS
@@ -410,7 +409,7 @@ public class AdminView extends VerticalLayout {
 
 // Set size
         treeGrid.setWidthFull();
-        treeGrid.setHeight("400px"); // smaller height to fit below with grid
+        treeGrid.setHeight("350px");
 
 // --- Content layout ---
         VerticalLayout content = new VerticalLayout();
@@ -508,10 +507,19 @@ public class AdminView extends VerticalLayout {
         }
         usersGrid.setItems(allUsers);
 
-// Optional: size
+// Size
         usersGrid.setWidthFull();
         usersGrid.setHeight("400px");
-        usersGrid.getStyle().set("margin-top", "20px"); // spacing below TreeGrid
+        usersGrid.getStyle().set("margin-top", "25px");
+// Hide scrollbars for TreeGrid
+        treeGrid.getElement().executeJs(
+                "this.shadowRoot.querySelector('#table').style.overflow = 'hidden';"
+        );
+
+// Hide scrollbars for Users Grid
+        usersGrid.getElement().executeJs(
+                "this.shadowRoot.querySelector('#table').style.overflow = 'hidden';"
+        );
 
 // Add Users Grid to content below TreeGrid
         content.add(usersGrid);
@@ -519,6 +527,30 @@ public class AdminView extends VerticalLayout {
 
 // Add content to AdminView layout
         add(content);
+
+// ------------------------------
+// Inject CSS directly into each component's shadow root
+// ------------------------------
+        String hideScrollJs = """
+const css = `
+:host { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+[part="scroller"] { overflow-x: hidden !important; overflow-y: hidden !important; }
+[part="scroller"]::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+`;
+(function apply() {
+  const root = this.shadowRoot;
+  if (!root) { setTimeout(apply.bind(this), 40); return; }
+  if (root.__vaadinHideScrollbars) return;
+  const style = document.createElement('style');
+  style.textContent = css;
+  root.appendChild(style);
+  root.__vaadinHideScrollbars = true;
+}).call(this);
+""";
+
+// apply to both components
+        treeGrid.getElement().executeJs(hideScrollJs);
+        usersGrid.getElement().executeJs(hideScrollJs);
 
 
 

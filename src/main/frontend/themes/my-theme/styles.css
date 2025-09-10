@@ -305,8 +305,34 @@ html, body {
 .my-dark-grid::part(body-cell) {
     border-right: 1px solid #ffffff33; /* subtle vertical lines */
 }
-
-/* Row hover */
+/* Dark grid row hover */
 .my-dark-grid::part(row):hover {
-    background-color: #2a2a2c;   /* subtle hover effect */
+  background-color: #2a2a2c;
+}
+
+/* Hide scrollbars in the user grid */
+.my-dark-grid::part(scroller) {
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;     /* Firefox */
+  -ms-overflow-style: none !important;  /* IE/Edge */
+}
+/* Users Grid */
+.my-dark-grid::part(scroller) {
+  overflow: hidden !important;
+  scrollbar-width: none !important;     /* Firefox */
+  -ms-overflow-style: none !important;  /* IE/Edge */
+}
+.my-dark-grid::part(scroller)::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Admin TreeGrid */
+.admin-treegrid::part(scroller) {
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.admin-treegrid::part(scroller)::-webkit-scrollbar {
+  display: none !important;
 }
