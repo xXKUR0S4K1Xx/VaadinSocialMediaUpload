@@ -1,7 +1,12 @@
 package org.vaadin.example.social;
 
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -27,6 +32,7 @@ public class MediaViewDB extends VerticalLayout {
     // Fields for reply tracking
     private Long replyToPostId = 0L;
     private String replyToUser = "";
+    private TextArea contentField; // 👈 make this a field, not shadowed
 
     public MediaViewDB(PostService postService, UserService userService, LikeService likeService) {
         this.postService = postService;
@@ -43,13 +49,12 @@ public class MediaViewDB extends VerticalLayout {
         // === Get logged-in user from session ===
         UserEntity currentUser = VaadinSession.getCurrent().getAttribute(UserEntity.class);
         if (currentUser == null) {
-            System.out.println("MediaViewDB session user: " + (currentUser != null ? currentUser.getUsername() : "null"));
             Notification.show("No logged-in user found");
             return;
         }
 
         // === Input card ===
-        TextArea contentField = new TextArea();
+        contentField = new TextArea(); // 👈 assign to field, not new local var
         contentField.setPlaceholder("Write something...");
         contentField.getStyle().set("color", "#fff");
 
@@ -76,7 +81,6 @@ public class MediaViewDB extends VerticalLayout {
                 replyToPostId = 0L;
                 replyToUser = "";
                 contentField.setPlaceholder("Write something...");
-                loadPosts(contentField);
             }
         });
 
@@ -91,53 +95,179 @@ public class MediaViewDB extends VerticalLayout {
             }
             likeService.likePost(currentUser, post);
             Notification.show("Post liked! Current likes: " + post.getLikes());
-            loadPosts(contentField);
+            loadPosts();
         });
         add(testLikeButton);
 
+
+        // === Post list ===
         // === Post list ===
         dbPostList = new VirtualList<>();
-        dbPostList.setWidthFull();
-        add(dbPostList);
+        dbPostList.setWidthFull();   // list takes full width
+        dbPostList.setHeightFull();
+        dbPostList.setRenderer(new ComponentRenderer<>(post -> {
+            Component card = createCommentCardDB(post);
+            card.getStyle().set("margin-bottom", "15px");
+            card.getStyle().set("max-width", "850px");
+            card.getStyle().set("width", "100%");
 
-        loadPosts(contentField); // pass contentField so reply buttons can update it
+            HorizontalLayout wrapper = new HorizontalLayout();
+            wrapper.setWidthFull();
+            wrapper.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+            wrapper.add(card);
+
+            return wrapper;
+        }));
+
+        HorizontalLayout mainLayout = new HorizontalLayout();
+        mainLayout.setWidthFull();
+        mainLayout.setHeightFull();
+        mainLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        mainLayout.add(dbPostList);
+
+        add(mainLayout);
+
+// Populate the list initially
+        loadPosts();
+
+
     }
 
-    private void loadPosts(TextArea contentField) {
+
+    /** Load posts from DB and refresh the virtual list */
+    private void loadPosts() {
         dbPosts = postService.findAll();
         dbPosts.sort((a, b) -> b.getId().compareTo(a.getId())); // newest first
-
         dbPostList.setItems(dbPosts);
-        dbPostList.setRenderer(new ComponentRenderer<>(post -> {
-            VerticalLayout card = new VerticalLayout();
-            card.getStyle().set("background-color", "#2a2a2b")
-                    .set("color", "#fff")
-                    .set("padding", "10px")
-                    .set("border-radius", "8px");
+    }
 
-            // Indent replies
-            if (post.getParentId() != 0L) {
-                card.getStyle().set("margin-left", "20px");
-                card.add(new Span("Reply to " + post.getParentUser()));
+    /** Create styled card for each post */
+    private VerticalLayout createCommentCardDB(PostEntity postData) {
+        // --- Card container ---
+        VerticalLayout commentCardLayout = new VerticalLayout();
+        commentCardLayout.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
+        commentCardLayout.setAlignItems(Alignment.CENTER);
+        commentCardLayout.addClassName("hover-card");
+        commentCardLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        commentCardLayout.setSpacing(true);
+        commentCardLayout.setPadding(true);
+        commentCardLayout.getStyle()
+                .set("border", "1px solid #ccc")
+                .set("border-radius", "10px")
+                .set("padding", "10px")
+                .set("margin-bottom", "15px")
+                .set("background-color", "#1a1a1b")
+                .set("color", "#ffffff");
+
+        if (postData.getParentId() != 0L) {
+            commentCardLayout.getStyle()
+                    .set("margin-left", "40px")
+                    .set("margin-top", "10px");
+        }
+
+        commentCardLayout.setWidth("800px");
+
+        // --- Top row ---
+        HorizontalLayout topRow = new HorizontalLayout();
+        String username = postData.getUserName();
+
+        final String avatarUrl = userService.findByUsername(username)
+                .map(user -> {
+                    String url = user.getAvatarUrl();
+                    return (url != null && !url.isEmpty()) ? url : "";
+                })
+                .orElse("");
+
+        Avatar userAvatar = new Avatar();
+        if (!avatarUrl.isEmpty()) {
+            userAvatar.setImage(avatarUrl);
+        }
+        userAvatar.getStyle()
+                .set("background-color", "white")
+                .set("border", "1px solid #ffffff");
+
+        Span userName = new Span(username);
+        userName.getStyle()
+                .set("color", "#ffffff")
+                .set("text-decoration", "underline")
+                .set("cursor", "pointer");
+
+        userName.getElement().addEventListener("click", event -> {
+            VaadinSession.getCurrent().setAttribute("selectedUser", username);
+            UI.getCurrent().navigate("userpage");
+        });
+
+        Span commentTime = new Span("Posted on: " + postData.getTimestamp());
+        commentTime.getStyle().set("color", "#ffffff");
+
+        topRow.add(userAvatar, userName, commentTime);
+        topRow.setWidthFull();
+        topRow.setJustifyContentMode(JustifyContentMode.START);
+        topRow.setAlignItems(Alignment.CENTER);
+
+        // --- Content ---
+        Div commentContent = new Div();
+        commentContent.setWidthFull();
+        commentContent.getStyle()
+                .set("text-align", "left")
+                .set("white-space", "pre-wrap")
+                .set("overflow-wrap", "break-word")
+                .set("word-break", "break-word")
+                .set("max-width", "750px")
+                .set("color", "#ffffff");
+        commentContent.setText(postData.getPostContent());
+
+        // --- Likes row ---
+        HorizontalLayout likesRow = new HorizontalLayout();
+        likesRow.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        likesRow.setAlignItems(Alignment.CENTER);
+        likesRow.getStyle().set("width", "725px");
+
+        Span likesCount = new Span("Liked: " + postData.getLikes());
+        likesCount.getStyle()
+                .set("font-size", "14px")
+                .set("color", "#ffffff")
+                .set("white-space", "nowrap");
+
+        LikeButtonDB likeButton = new LikeButtonDB(postData, postService, userService);
+        likesRow.add(likesCount, likeButton);
+
+        // --- Reply input ---
+        TextField replyField = new TextField();
+        replyField.setPlaceholder("Reply to " + postData.getUserName() + "...");
+        replyField.setWidthFull();
+
+        Button replyButton = new Button("Reply", e -> {
+            String replyContent = replyField.getValue().trim();
+            if (!replyContent.isEmpty()) {
+                UserEntity currentUser = VaadinSession.getCurrent().getAttribute(UserEntity.class);
+                if (currentUser != null) {
+                    PostEntity replyPost = new PostEntity();
+                    replyPost.setUserName(currentUser.getUsername());
+                    replyPost.setPostContent(replyContent);
+                    replyPost.setTimestamp(java.time.LocalDateTime.now().toString());
+                    replyPost.setParentId(postData.getId());
+                    replyPost.setParentUser(postData.getUserName());
+                    replyPost.setLikes(0);
+
+                    postService.save(replyPost);
+                    replyField.clear();
+                    loadPosts();
+                } else {
+                    Notification.show("No logged-in user to post reply");
+                }
             }
+        });
 
-            card.add(new Span(post.getUserName()));
-            card.add(new Span(post.getPostContent()));
+        HorizontalLayout replyLayout = new HorizontalLayout(replyField, replyButton);
+        replyLayout.setWidthFull();
 
-            LikeButtonDB likeButton = new LikeButtonDB(post, postService, userService);
-            card.add(likeButton);
+        // --- Assemble ---
+        commentCardLayout.add(topRow, commentContent, likesRow, replyLayout);
 
-            // --- Reply button ---
-            Button replyButton = new Button("Reply", e -> {
-                replyToPostId = post.getId();
-                replyToUser = post.getUserName();
-                contentField.setPlaceholder("Replying to " + replyToUser + "...");
-                contentField.focus();
-            });
-            card.add(replyButton);
-
-            return card;
-        }));
+        return commentCardLayout;
     }
 }
+
+
 
