@@ -17,6 +17,9 @@ public class UserEntity {
     @Column(nullable = false)
     private String password; // consider storing hashed passwords
 
+    @Column(name = "avatar_url")
+    private String avatarUrl; // avatar URL
+
     private int postCount;
     private int likeCount;
 
@@ -28,9 +31,10 @@ public class UserEntity {
     // Default constructor required by JPA
     public UserEntity() {}
 
-    public UserEntity(String username, String password, int postCount, int likeCount, List<String> postNames) {
+    public UserEntity(String username, String password, String avatarUrl, int postCount, int likeCount, List<String> postNames) {
         this.username = username;
         this.password = password;
+        this.avatarUrl = avatarUrl;
         this.postCount = postCount;
         this.likeCount = likeCount;
         this.postNames = postNames;
@@ -44,6 +48,9 @@ public class UserEntity {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 
     public int getPostCount() { return postCount; }
     public void setPostCount(int postCount) { this.postCount = postCount; }
