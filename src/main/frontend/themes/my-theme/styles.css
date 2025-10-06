@@ -237,12 +237,13 @@ html, body {
     --lumo-base-color: #1a1a1b;
     --lumo-primary-text-color: white;
 }
-/* Apply only inside your custom TreeGrid */
+/* Scope everything to this one grid */
 .admin-treegrid {
   background-color: #1a1a1b;
   color: #fff;
-
   --lumo-base-color: #1a1a1b;
+
+  /* Make ALL text/icons bright inside this grid */
   --lumo-body-text-color: #ffffff;
   --lumo-primary-text-color: #ffffff;
   --lumo-secondary-text-color: #ffffff;
@@ -250,71 +251,88 @@ html, body {
   --lumo-icon-color: #ffffff;
 }
 
-/* Row + header backgrounds */
+/* Ensure rows aren’t translucent over dark backgrounds */
 .admin-treegrid::part(row),
 .admin-treegrid::part(header-cell) {
   background-color: #1a1a1b;
-  color: #fff;
 }
 
-/* Bright horizontal dividers between rows */
-.admin-treegrid::part(cell) {
-  border-bottom: 1px solid #aaa; /* brighter line */
-}
-
-/* Make the expand/collapse toggle (arrow/lines) fully bright */
+/* <<< KEY: brighten the expand/collapse control >>> */
+/* The built-in tree toggle element lives in light DOM as <vaadin-grid-tree-toggle> */
 .admin-treegrid vaadin-grid-tree-toggle {
-  color: #ffffff !important;              /* text label */
-  --lumo-primary-text-color: #ffffff;     /* arrow */
-  --lumo-icon-color: #ffffff;             /* icon */
-  opacity: 1 !important;                  /* remove dimming */
+  color: #fff;                     /* label */
+  --lumo-primary-text-color: #fff; /* icon fill */
+  --lumo-icon-color: #fff;         /* icon color */
+  opacity: 1;                      /* kill default dimming */
 }
 
-/* Extra: force the icon inside the toggle */
+/* Extra safety: hit its internal parts if present */
 .admin-treegrid vaadin-grid-tree-toggle::part(toggle),
 .admin-treegrid vaadin-grid-tree-toggle::part(icon) {
-  color: #ffffff !important;
-  opacity: 1 !important;
+  color: #fff;
+  opacity: 1;
 }
 
 /* Optional hover/selected */
-.admin-treegrid::part(row):hover {
-  background-color: #2a2a2b;
-}
-.admin-treegrid::part(row[selected]) {
-  background-color: #3a3a3b;
-  color: #fff;
+.admin-treegrid::part(row):hover { background-color: #2a2a2b; }
+.admin-treegrid::part(row[selected]) { background-color: #3a3a3b; color: #fff; }
+
+/* Reddit-style dark grid */
+.my-dark-grid {
+    --lumo-base-color: #1a1a1b;   /* Reddit dark gray background */
+    --lumo-body-text-color: #d7dadc; /* Reddit light gray text */
+    background-color: #1a1a1b;
+    color: #d7dadc;
+    border: 1px solid #343536;
+    border-radius: 6px;
 }
 
-
-
-:host([theme~="no-scrollbar"]) #table::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-:host([theme~="no-scrollbar"]) {
-  scrollbar-width: none;   /* Firefox */
-}
-/* Grid background and text */
-.dark-grid::part(cell),
-.dark-grid::part(header-cell) {
-  background-color: #1e1e1e;
-  color: #f0f0f0;
-  border-bottom: 1px solid #333;
+/* Header */
+.my-dark-grid::part(header-cell) {
+    background-color: #272729;   /* slightly lighter for header row */
+    color: #ffffff;              /* pure white header text */
+    font-weight: bold;
 }
 
-/* Header row */
-.dark-grid::part(header-cell) {
-  background-color: #2a2a2a;
-  font-weight: bold;
+/* Make gridlines visible */
+.my-dark-grid::part(cell) {
+    border-bottom: 1px solid #ffffff33; /* semi-transparent white line */
+    background-color: #1a1a1b;
+    color: #d7dadc;
 }
 
-/* Row hover */
-.dark-grid::part(row):hover {
-  background-color: #333333;
+/* Optional: vertical gridlines too */
+.my-dark-grid::part(body-cell) {
+    border-right: 1px solid #ffffff33; /* subtle vertical lines */
+}
+/* Dark grid row hover */
+.my-dark-grid::part(row):hover {
+  background-color: #2a2a2c;
 }
 
-/* Selected row */
-.dark-grid::part(selected-row) {
-  background-color: #444;
+/* Hide scrollbars in the user grid */
+.my-dark-grid::part(scroller) {
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;     /* Firefox */
+  -ms-overflow-style: none !important;  /* IE/Edge */
+}
+/* Users Grid */
+.my-dark-grid::part(scroller) {
+  overflow: hidden !important;
+  scrollbar-width: none !important;     /* Firefox */
+  -ms-overflow-style: none !important;  /* IE/Edge */
+}
+.my-dark-grid::part(scroller)::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Admin TreeGrid */
+.admin-treegrid::part(scroller) {
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.admin-treegrid::part(scroller)::-webkit-scrollbar {
+  display: none !important;
 }
