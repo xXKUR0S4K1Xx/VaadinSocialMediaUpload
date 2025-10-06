@@ -1,4 +1,5 @@
 package org.vaadin.example.social;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -7,9 +8,10 @@ public class PostEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;  // auto-increment, ersetzt postId
+    private Long id;  // DB primary key
 
-    private Long parentId;        // 0 wenn kein Parent
+    private String postId;        // optional old postId for compatibility
+    private Long parentId;        // 0 if no parent
     private int likes;
     private String parentUser;
 
@@ -22,11 +24,12 @@ public class PostEntity {
     @Column(length = 1000)
     private String likedUsers;
 
-    // --- Konstruktoren ---
-    public PostEntity() {} // JPA benötigt Default-Konstruktor
+    // --- Constructors ---
+    public PostEntity() {} // JPA requires default constructor
 
-    public PostEntity(String parentId, int likes, String parentUser, String postContent,
-                      String timestamp, String userName, String likedUsers) {
+    public PostEntity(String postId, String parentId, int likes, String parentUser,
+                      String postContent, String timestamp, String userName, String likedUsers) {
+        this.postId = postId;
         this.parentId = parentId == null ? 0L : Long.parseLong(parentId);
         this.likes = likes;
         this.parentUser = parentUser;
@@ -36,8 +39,11 @@ public class PostEntity {
         this.likedUsers = likedUsers;
     }
 
-    // --- Getter/Setter ---
+    // --- Getters/Setters ---
     public Long getId() { return id; }
+
+    public String getPostId() { return postId; }
+    public void setPostId(String postId) { this.postId = postId; }
 
     public Long getParentId() { return parentId; }
     public void setParentId(Long parentId) { this.parentId = parentId; }
@@ -60,7 +66,7 @@ public class PostEntity {
     public String getLikedUsers() { return likedUsers; }
     public void setLikedUsers(String likedUsers) { this.likedUsers = likedUsers; }
 
-    // --- Methoden für Likes ---
+    // --- Like handling ---
     public void addLike(String username) {
         if (likedUsers == null || likedUsers.isEmpty()) {
             likedUsers = username;
@@ -70,9 +76,10 @@ public class PostEntity {
         likes++;
     }
 
-    // --- Hilfsmethoden zum Migrieren von alten Posts ---
+    // --- Migration helper ---
     public static PostEntity fromOldPost(Post oldPost) {
         return new PostEntity(
+                oldPost.getPostId(),
                 oldPost.getParentId(),
                 oldPost.getLikes(),
                 oldPost.getParentUser(),
