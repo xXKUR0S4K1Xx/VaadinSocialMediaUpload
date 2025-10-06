@@ -1034,7 +1034,6 @@ public class Media extends VerticalLayout {
                 .set("background-color", "#1a1a1b")
                 .set("border-left", "1px solid #444");
 
-        // Create inner vertical layout inside filler
         VerticalLayout innerLayout = new VerticalLayout();
         innerLayout.setWidthFull();
         innerLayout.setPadding(false);
@@ -1049,16 +1048,39 @@ public class Media extends VerticalLayout {
                 .set("font-size", "1.2em")
                 .set("color", "white");
 
-// 2. Read-only TextField to display forumName (user cannot edit)
-        forumNameField.setValue(forumname);
-        forumNameField.setReadOnly(true);
-        forumNameField.setWidthFull();
+// 2. Read-only TextField to display forum summary from Summary file
+        TextArea forumSummaryField = new TextArea();
+        forumSummaryField.setWidthFull();
+        forumSummaryField.setReadOnly(true);
+        forumSummaryField.getStyle()
+                .set("border", "1px solid white")
+                .set("color", "white")
+                .setHeight("150px");
+
+
+        Path summaryFile = Paths.get(
+                "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum",
+                forumname,
+                "Descriptors",
+                "Summary"
+        );
+
+        if (Files.exists(summaryFile)) {
+            try {
+                String summaryContent = Files.readString(summaryFile);
+                forumSummaryField.setValue(summaryContent);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
 // 3. Check if user is admin by verifying if the folder exists
         boolean isAdmin = false;
         try {
-            Path adminPath = Paths.get("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
-                    username, "Administrator", forumname);
+            Path adminPath = Paths.get(
+                    "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                    username, "Administrator", forumname
+            );
             System.out.println("Checking admin folder exists: " + adminPath.toString());
             System.out.println("Exists: " + Files.exists(adminPath));
             System.out.println("Is directory: " + Files.isDirectory(adminPath));
@@ -1072,9 +1094,12 @@ public class Media extends VerticalLayout {
             getUI().ifPresent(ui -> ui.navigate("admin"));
         });
         editButton.setVisible(isAdmin);
+        editButton.getStyle().set("background-color", "white");
+        editButton.getStyle().set("color", "black");
+        editButton.getStyle().set("border", "1px solid black");
 
 // Add components to inner layout
-        innerLayout.add(forumNameDiv, forumNameField);
+        innerLayout.add(forumNameDiv, forumSummaryField);
         if (isAdmin) {
             innerLayout.add(editButton);
         }

@@ -2,7 +2,14 @@ package org.vaadin.example.social;
 import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.textfield.TextArea;
+
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.server.StreamResource;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
@@ -26,12 +33,11 @@ import com.vaadin.flow.component.virtuallist.VirtualList;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.server.StreamResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Stream;
@@ -406,6 +412,10 @@ public class AdminView extends VerticalLayout {
 // Set size
         treeGrid.setWidthFull();
         treeGrid.setHeight("400px"); // smaller height to fit below with grid
+        treeGrid.getStyle().set("overflow", "hidden");
+        treeGrid.getElement().getThemeList().add("no-scrollbar"); // tag grid host
+        treeGrid.getElement().executeJs(
+                "const t=this.shadowRoot && this.shadowRoot.querySelector('#table'); if(t) t.style.overflow='hidden';");
 
 // --- Content layout ---
         VerticalLayout content = new VerticalLayout();
@@ -421,22 +431,61 @@ public class AdminView extends VerticalLayout {
 
 // --- Users Grid ---
         Grid<User> usersGrid = new Grid<>(User.class, false); // don't auto-generate columns
+        usersGrid.addClassName("dark-grid");
+        usersGrid.getElement().executeJs(
+                "const t=this.shadowRoot && this.shadowRoot.querySelector('#table'); if(t) t.style.overflow='hidden';");
+// Base path: dynamic, relative to the current system user
+        String basePath = System.getProperty("user.home")
+                + "/IdeaProjects/VaadinSocialMediaUpload/users";
 
 // Column: Username
         usersGrid.addColumn(User::getUsername).setHeader("User");
 
+// Column: Avatar (second column)
+        usersGrid.addComponentColumn(user -> {
+            File avatarFolder = new File(basePath + "/" + user.getUsername() + "/Avatar");
+            if (avatarFolder.exists() && avatarFolder.isDirectory()) {
+                File[] avatars = avatarFolder.listFiles();
+                if (avatars != null && avatars.length > 0) {
+                    // pick the newest avatar file
+                    File avatarFile = Arrays.stream(avatars)
+                            .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()))
+                            .orElse(avatars[0]);
+                    StreamResource resource = new StreamResource(
+                            avatarFile.getName(),
+                            () -> {
+                                try {
+                                    return new FileInputStream(avatarFile);
+                                } catch (FileNotFoundException e) {
+                                    e.printStackTrace();
+                                    return null;
+                                }
+                            }
+                    );
+                    Image avatar = new Image(resource, "avatar");
+                    avatar.setWidth("50px");
+                    avatar.setHeight("50px");
+                    avatar.getStyle().set("border-radius", "50%"); // round avatar
+                    return avatar;
+                }
+            }
+            // Fallback if no avatar found
+            Image placeholder = new Image();
+            placeholder.setWidth("50px");
+            placeholder.setHeight("50px");
+            return placeholder;
+        }).setHeader("Avatar");
+
 // Column: Admin? Yes/No
         usersGrid.addColumn(user -> {
-            File adminFolder = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users/"
-                    + user.getUsername() + "/Administrator");
+            File adminFolder = new File(basePath + "/" + user.getUsername() + "/Administrator");
             return (adminFolder.exists() && adminFolder.isDirectory()
                     && Objects.requireNonNull(adminFolder.listFiles()).length > 0) ? "Yes" : "No";
-        }).setHeader("Admin");
+        }).setHeader("is Admin?");
 
 // Column: Last post number
         usersGrid.addColumn(user -> {
-            File postsFolder = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users/"
-                    + user.getUsername() + "/Posts");
+            File postsFolder = new File(basePath + "/" + user.getUsername() + "/Posts");
             int lastPostNumber = 0;
             if (postsFolder.exists() && postsFolder.isDirectory()) {
                 File[] posts = postsFolder.listFiles(File::isFile);
@@ -455,7 +504,7 @@ public class AdminView extends VerticalLayout {
         }).setHeader("Posts");
 
 // Load all users from folder
-        File usersFolder = new File("C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users");
+        File usersFolder = new File(basePath);
         List<User> allUsers = new ArrayList<>();
         for (File userDir : Objects.requireNonNull(usersFolder.listFiles(File::isDirectory))) {
             User user = User.loadFromFile(userDir.getName());
@@ -468,7 +517,9 @@ public class AdminView extends VerticalLayout {
 // Optional: size
         usersGrid.setWidthFull();
         usersGrid.setHeight("400px");
-        usersGrid.getStyle().set("margin-top", "20px"); // 20px spacing
+        usersGrid.getStyle().set("margin-top", "20px"); // spacing below TreeGrid
+        usersGrid.getStyle().set("margin-bottom", "20px");
+        usersGrid.getStyle().set("overflow", "hidden");
 
 // Add Users Grid to content below TreeGrid
         content.add(usersGrid);
@@ -520,13 +571,90 @@ public class AdminView extends VerticalLayout {
         filler.setHeightFull();
         filler.setWidth("200px");
         filler.setAlignItems(Alignment.END);
-
         filler.getStyle()
                 .set("bottom", "0")
                 .set("right", "0")
                 .set("background-color", "#1a1a1b")
                 .set("border-left", "1px solid #444"); // Border on the left side
 
+        // Vertical layout for description + TextArea
+        VerticalLayout descriptionLayout = new VerticalLayout();
+        descriptionLayout.setPadding(false);
+        descriptionLayout.setSpacing(false);
+        descriptionLayout.setWidthFull();
+
+        // Div above the TextArea
+        Div descriptionDiv = new Div();
+        descriptionDiv.setText("Forum description");
+        descriptionDiv.getStyle()
+                .set("color", "white")
+                .set("font-weight", "bold")
+                .set("margin-bottom", "5px"); // spacing between div and TextArea
+
+// TextArea for editing
+        TextArea summaryArea = new TextArea();
+        summaryArea.setWidthFull();
+        summaryArea.setHeight("150px");
+        summaryArea.setPlaceholder("Write summary here...");
+
+// White text and outline for TextArea
+        summaryArea.getStyle()
+                .set("color", "white")
+                .set("border", "1px solid white")
+                .set("background-color", "#1a1a1b")
+                .set("outline", "none");
+
+// Load existing content from file
+        String forumName = readCurrentForum(username); // get current forum
+        if (forumName != null && !forumName.isEmpty()) {
+            Path summaryFile = Paths.get(
+                    "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum",
+                    forumName,
+                    "Descriptors",
+                    "Summary"
+            );
+            if (Files.exists(summaryFile)) {
+                try {
+                    String descriptorText = Files.readString(summaryFile);
+                    summaryArea.setValue(descriptorText);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+// Button to finish editing
+        Button finishButton = new Button("Finish Editing", event -> {
+            if (forumName == null || forumName.isEmpty()) return;
+
+            Path summaryFile = Paths.get(
+                    "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/Forum",
+                    forumName,
+                    "Descriptors",
+                    "Summary"
+            );
+
+            try {
+                // Ensure parent folder exists
+                Files.createDirectories(summaryFile.getParent());
+
+                // Overwrite file with TextArea content
+                Files.writeString(summaryFile, summaryArea.getValue());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+// White text and white outline for Button
+        finishButton.getStyle()
+                .set("color", "white")
+                .set("border", "1px solid white")
+                .set("background-color", "#1a1a1b");
+
+        descriptionLayout.add(descriptionDiv, summaryArea, finishButton);
+
+// Add TextArea and Button to filler layout
+        filler.add(descriptionLayout);
 
 // ===== Content =====
         layout.add(sideBar, content, filler); // Only content is part of layout flow
@@ -629,6 +757,28 @@ public class AdminView extends VerticalLayout {
             return "unknown";
         }
     }
+    public static String readCurrentForum(String username) {
+        if (username == null || username.isEmpty()) {
+            return null;
+        }
 
+        Path forumFilePath = Paths.get(
+                "C:/Users/sdachs/IdeaProjects/VaadinSocialMediaUpload/users",
+                username,
+                "Forum"
+        );
+
+        if (Files.exists(forumFilePath)) {
+            try {
+                String forum = Files.readString(forumFilePath).trim();
+                if (!forum.isEmpty()) {
+                    return forum;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
 
 }

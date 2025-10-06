@@ -45,7 +45,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Route("admin")
+@Route("adminsettings")
 public class AdminSettings extends VerticalLayout {
     private static final Logger log = LoggerFactory.getLogger(Media.class);  // Main layout of the Media view. It extends VerticalLayout for vertical stacking of components.
 
