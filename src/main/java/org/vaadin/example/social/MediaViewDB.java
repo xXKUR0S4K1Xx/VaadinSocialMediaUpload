@@ -46,7 +46,7 @@ public class MediaViewDB extends VerticalLayout {
                         "this.inputElement.style.setProperty('opacity', '1', 'important');" +
                         "this.inputElement.setAttribute('placeholder', this.getAttribute('placeholder'));"
         );
-/
+//
         Button saveButton = new Button("Post", e -> {
             PostEntity post = new PostEntity();
             post.setUserName(userField.getValue());
