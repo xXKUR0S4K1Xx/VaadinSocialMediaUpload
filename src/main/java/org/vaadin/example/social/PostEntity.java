@@ -10,7 +10,6 @@ public class PostEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;  // DB primary key
 
-    private String postId;        // optional old postId for compatibility
     private Long parentId;        // 0 if no parent
     private int likes;
     private String parentUser;
@@ -27,9 +26,8 @@ public class PostEntity {
     // --- Constructors ---
     public PostEntity() {} // JPA requires default constructor
 
-    public PostEntity(String postId, String parentId, int likes, String parentUser,
+    public PostEntity(String parentId, int likes, String parentUser,
                       String postContent, String timestamp, String userName, String likedUsers) {
-        this.postId = postId;
         this.parentId = parentId == null ? 0L : Long.parseLong(parentId);
         this.likes = likes;
         this.parentUser = parentUser;
@@ -41,9 +39,6 @@ public class PostEntity {
 
     // --- Getters/Setters ---
     public Long getId() { return id; }
-
-    public String getPostId() { return postId; }
-    public void setPostId(String postId) { this.postId = postId; }
 
     public Long getParentId() { return parentId; }
     public void setParentId(Long parentId) { this.parentId = parentId; }
@@ -79,7 +74,6 @@ public class PostEntity {
     // --- Migration helper ---
     public static PostEntity fromOldPost(Post oldPost) {
         return new PostEntity(
-                oldPost.getPostId(),
                 oldPost.getParentId(),
                 oldPost.getLikes(),
                 oldPost.getParentUser(),

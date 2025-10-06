@@ -39,7 +39,7 @@ public class LikeButtonDB extends Div {
     }
 
     private void likePost() {
-        UserEntity currentUser = UserUtils.getCurrentUser(userService); // utility method
+        UserEntity currentUser = UserUtils.getCurrentUser(); // utility method
         if (currentUser == null) {
             System.out.println("No user logged in!");
             return;

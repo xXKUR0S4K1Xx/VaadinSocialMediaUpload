@@ -19,12 +19,19 @@ public class MediaViewDB extends VerticalLayout {
 
     private final PostService postService;
     private final UserService userService;
+    private final LikeService likeService;
+
     private List<PostEntity> dbPosts;
     private VirtualList<PostEntity> dbPostList;
 
-    public MediaViewDB(PostService postService, UserService userService) {
+    // Fields for reply tracking
+    private Long replyToPostId = 0L;
+    private String replyToUser = "";
+
+    public MediaViewDB(PostService postService, UserService userService, LikeService likeService) {
         this.postService = postService;
         this.userService = userService;
+        this.likeService = likeService;
 
         setSizeFull();
         setAlignItems(Alignment.CENTER);
@@ -36,6 +43,7 @@ public class MediaViewDB extends VerticalLayout {
         // === Get logged-in user from session ===
         UserEntity currentUser = VaadinSession.getCurrent().getAttribute(UserEntity.class);
         if (currentUser == null) {
+            System.out.println("MediaViewDB session user: " + (currentUser != null ? currentUser.getUsername() : "null"));
             Notification.show("No logged-in user found");
             return;
         }
@@ -45,59 +53,57 @@ public class MediaViewDB extends VerticalLayout {
         contentField.setPlaceholder("Write something...");
         contentField.getStyle().set("color", "#fff");
 
-        Button saveButton = new Button("Post", e -> {
+        Button sendButton = new Button("Send", e -> {
             String content = contentField.getValue().trim();
             if (!content.isEmpty()) {
                 PostEntity post = new PostEntity();
-                post.setUserName(currentUser.getUsername()); // use logged-in user
+                post.setUserName(currentUser.getUsername());
                 post.setPostContent(content);
                 post.setTimestamp(java.time.LocalDateTime.now().toString());
-                post.setParentId(0L);
                 post.setLikes(0);
 
-                postService.save(post); // save to DB
-                contentField.clear();
+                // If replying to a post, set parent info
+                if (replyToPostId != 0L) {
+                    post.setParentId(replyToPostId);
+                    post.setParentUser(replyToUser);
+                } else {
+                    post.setParentId(0L);
+                    post.setParentUser(null);
+                }
 
-                loadPosts();
+                postService.save(post);
+                contentField.clear();
+                replyToPostId = 0L;
+                replyToUser = "";
+                contentField.setPlaceholder("Write something...");
+                loadPosts(contentField);
             }
         });
 
-        add(contentField, saveButton);
+        add(contentField, sendButton);
+
+        // === Optional test like button ===
+        Button testLikeButton = new Button("Test Like Post 1", e -> {
+            PostEntity post = postService.findById(1L).orElse(null);
+            if (post == null) {
+                Notification.show("Post not found");
+                return;
+            }
+            likeService.likePost(currentUser, post);
+            Notification.show("Post liked! Current likes: " + post.getLikes());
+            loadPosts(contentField);
+        });
+        add(testLikeButton);
 
         // === Post list ===
         dbPostList = new VirtualList<>();
         dbPostList.setWidthFull();
         add(dbPostList);
 
-        // === Message input field ===
-        TextField messageField = new TextField();
-        messageField.setPlaceholder("Type your message...");
-        messageField.setWidthFull();
-
-        Button sendButton = new Button("Send", e -> {
-            String content = messageField.getValue().trim();
-            if (!content.isEmpty()) {
-                PostEntity post = new PostEntity();
-                post.setUserName(currentUser.getUsername()); // use logged-in user
-                post.setPostContent(content);
-                post.setTimestamp(java.time.LocalDateTime.now().toString());
-                post.setParentId(0L);
-                post.setLikes(0);
-
-                postService.save(post);
-                messageField.clear();
-                loadPosts();
-            }
-        });
-
-        HorizontalLayout inputLayout = new HorizontalLayout(messageField, sendButton);
-        inputLayout.setWidthFull();
-        add(inputLayout);
-
-        loadPosts(); // initial load
+        loadPosts(contentField); // pass contentField so reply buttons can update it
     }
 
-    private void loadPosts() {
+    private void loadPosts(TextArea contentField) {
         dbPosts = postService.findAll();
         dbPosts.sort((a, b) -> b.getId().compareTo(a.getId())); // newest first
 
@@ -108,11 +114,27 @@ public class MediaViewDB extends VerticalLayout {
                     .set("color", "#fff")
                     .set("padding", "10px")
                     .set("border-radius", "8px");
+
+            // Indent replies
+            if (post.getParentId() != 0L) {
+                card.getStyle().set("margin-left", "20px");
+                card.add(new Span("Reply to " + post.getParentUser()));
+            }
+
             card.add(new Span(post.getUserName()));
             card.add(new Span(post.getPostContent()));
 
             LikeButtonDB likeButton = new LikeButtonDB(post, postService, userService);
             card.add(likeButton);
+
+            // --- Reply button ---
+            Button replyButton = new Button("Reply", e -> {
+                replyToPostId = post.getId();
+                replyToUser = post.getUserName();
+                contentField.setPlaceholder("Replying to " + replyToUser + "...");
+                contentField.focus();
+            });
+            card.add(replyButton);
 
             return card;
         }));

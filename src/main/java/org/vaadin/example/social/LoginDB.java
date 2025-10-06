@@ -37,6 +37,7 @@ public class LoginDB extends VerticalLayout {
             if (user.getPassword().equals(password)) {
                 VaadinSession.getCurrent().setAttribute(UserEntity.class, user);
                 Notification.show("Login successful!");
+                System.out.println("LoginDB set session user: " + user.getUsername());
                 UI.getCurrent().navigate("mediadb");
             } else {
                 Notification.show("Wrong password");
