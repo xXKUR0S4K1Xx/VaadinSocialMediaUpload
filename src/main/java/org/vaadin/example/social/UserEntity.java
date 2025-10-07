@@ -18,7 +18,11 @@ public class UserEntity {
     private String password; // consider storing hashed passwords
 
     @Column(name = "avatar_url")
-    private String avatarUrl; // avatar URL
+    private String avatarUrl; // optional URL path for legacy support
+
+    @Lob
+    @Column(name = "avatar_data")
+    private byte[] avatarData; // store actual avatar image in DB
 
     private int postCount;
     private int likeCount;
@@ -31,10 +35,12 @@ public class UserEntity {
     // Default constructor required by JPA
     public UserEntity() {}
 
-    public UserEntity(String username, String password, String avatarUrl, int postCount, int likeCount, List<String> postNames) {
+    public UserEntity(String username, String password, String avatarUrl, byte[] avatarData,
+                      int postCount, int likeCount, List<String> postNames) {
         this.username = username;
         this.password = password;
         this.avatarUrl = avatarUrl;
+        this.avatarData = avatarData;
         this.postCount = postCount;
         this.likeCount = likeCount;
         this.postNames = postNames;
@@ -51,6 +57,9 @@ public class UserEntity {
 
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public byte[] getAvatarData() { return avatarData; }
+    public void setAvatarData(byte[] avatarData) { this.avatarData = avatarData; }
 
     public int getPostCount() { return postCount; }
     public void setPostCount(int postCount) { this.postCount = postCount; }

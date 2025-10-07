@@ -46,13 +46,15 @@ public class LikeButtonDB extends Div {
         }
 
         String likedUsers = post.getLikedUsers();
+        boolean hasLiked = false;
 
         if (likedUsers == null || likedUsers.isEmpty()) {
             likedUsers = currentUser.getUsername();
             post.setLikes(post.getLikes() + 1);
+            hasLiked = false; // user was not previously in the list
         } else {
             String[] usernames = likedUsers.split(",");
-            boolean hasLiked = Arrays.stream(usernames)
+            hasLiked = Arrays.stream(usernames)
                     .anyMatch(u -> u.equals(currentUser.getUsername()));
 
             if (hasLiked) {
@@ -69,8 +71,14 @@ public class LikeButtonDB extends Div {
         post.setLikedUsers(likedUsers);
         postService.save(post);
 
-        // Update user's total likes
-        currentUser.setLikeCount(currentUser.getLikeCount() + (likedUsers.contains(currentUser.getUsername()) ? 1 : -1));
+        // Update user's total likes properly
+        if (hasLiked) {
+            currentUser.setLikeCount(currentUser.getLikeCount() - 1);
+        } else {
+            currentUser.setLikeCount(currentUser.getLikeCount() + 1);
+        }
         userService.save(currentUser);
     }
-}
+
+    }
+

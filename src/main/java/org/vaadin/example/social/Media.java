@@ -1425,8 +1425,6 @@ public class Media extends VerticalLayout {
         return replyCardLayout;
     }
 
-
-
     private Component createPostInputCard() {
         VerticalLayout postLayout = new VerticalLayout();
         postLayout.addClassName("hover-card");
