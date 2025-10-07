@@ -132,6 +132,27 @@ public class MediaViewDB extends VerticalLayout {
             } else return new Span("Unknown item");
         }));
 
+        // --- Top bar layout ---
+        HorizontalLayout topBar = new HorizontalLayout();
+        topBar.setWidthFull();
+        topBar.setHeight("5vh"); // 5% of viewport height
+        topBar.getStyle().set("background-color", "#2a2a2b");
+        topBar.setPadding(true);
+        topBar.setAlignItems(FlexComponent.Alignment.CENTER);
+        topBar.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER); // center horizontally
+        topBar.setSpacing(true);
+
+// --- Rounded search field ---
+        TextField searchField = new TextField();
+        searchField.setPlaceholder("Search...");
+        searchField.setWidth("300px");
+        searchField.getStyle().set("background-color", "#1a1a1b");
+        searchField.getStyle().set("color", "#fff");
+        searchField.getStyle().set("border-radius", "20px"); // rounded
+        searchField.getStyle().set("padding", "5px 15px");
+        searchField.getStyle().set("border", "1px solid #555");
+// Add search field to top bar
+        topBar.add(searchField);
 // --- Layout ---
         VerticalLayout listWithInput = new VerticalLayout(dbPostList);
         listWithInput.setWidthFull();
@@ -146,7 +167,7 @@ public class MediaViewDB extends VerticalLayout {
         mainLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         mainLayout.add(listWithInput);
 
-        add(mainLayout);
+        add(topBar, mainLayout);
 
 // --- Load posts initially ---
         loadPosts();
