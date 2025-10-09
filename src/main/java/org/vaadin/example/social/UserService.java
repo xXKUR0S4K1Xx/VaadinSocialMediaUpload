@@ -4,7 +4,12 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.VaadinSession;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,6 +45,14 @@ public class UserService {
     @Transactional
     public void delete(Long id) {
         repository.deleteById(id);
+    }
+    @Transactional
+    public void saveAvatar(UserEntity user, byte[] avatarData) throws IOException {
+        String avatarPath = "images/" + user.getUsername() + ".png"; // example path
+        Files.write(Paths.get(avatarPath), avatarData);              // save file to disk
+
+        user.setAvatarUrl("/" + avatarPath);                         // store relative URL in DB
+        save(user);                                      // persist to DB
     }
 
     @Transactional(readOnly = true)

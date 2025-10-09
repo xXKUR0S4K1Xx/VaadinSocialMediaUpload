@@ -26,6 +26,9 @@ public class PostService {
 
         return repository.save(post);
     }
+    public List<PostEntity> findPostsByUser(String username) {
+        return repository.findByUserName(username);
+    }
 
     public List<PostEntity> findAll() {
         return repository.findAll();

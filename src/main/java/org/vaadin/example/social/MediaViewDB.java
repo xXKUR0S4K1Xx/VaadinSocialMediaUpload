@@ -1,4 +1,5 @@
 package org.vaadin.example.social;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
 
 import com.vaadin.flow.component.Component;
@@ -7,12 +8,16 @@ import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.listbox.ListBox;
+import java.util.Comparator;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
@@ -27,6 +32,7 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,40 +71,12 @@ public class MediaViewDB extends VerticalLayout {
             VaadinSession.getCurrent().setAttribute(UserEntity.class, sessionUser);
         }
 
-// 👇 make it effectively final for use in lambdas later
         final UserEntity currentUser = sessionUser;
 
         // === Input card ===
         contentField = new TextArea();
         contentField.setPlaceholder("Write something...");
         contentField.getStyle().set("color", "#fff");
-
-        Button sendButton = new Button("Send", e -> {
-            String content = contentField.getValue().trim();
-            if (!content.isEmpty()) {
-                PostEntity post = new PostEntity();
-                post.setUserName(currentUser.getUsername());
-                post.setPostContent(content);
-                post.setTimestamp(LocalDateTime.now().format(formatter));
-                post.setLikes(0);
-
-                if (replyToPostId != 0L) {
-                    post.setParentId(replyToPostId);
-                    post.setParentUser(replyToUser);
-                } else {
-                    post.setParentId(0L);
-                    post.setParentUser(null);
-                }
-
-                postService.save(post);
-                contentField.clear();
-                replyToPostId = 0L;
-                replyToUser = "";
-                contentField.setPlaceholder("Write your post...");
-
-                loadPosts(); // refresh list after posting
-            }
-        });
 
         // --- Create input card ---
         Component inputCard = createPostInputCardDB(); // your input card
@@ -107,6 +85,8 @@ public class MediaViewDB extends VerticalLayout {
         dbPostList = new VirtualList<>();
         dbPostList.setWidthFull();
         dbPostList.setHeightFull();
+        dbPostList.getStyle()
+                .set("overflow", "hidden !important");
 
 // --- Combine input card + posts into one list ---
         List<Object> allItems = new ArrayList<>();
@@ -132,27 +112,123 @@ public class MediaViewDB extends VerticalLayout {
             } else return new Span("Unknown item");
         }));
 
-        // --- Top bar layout ---
+// --- Top bar layout ---
         HorizontalLayout topBar = new HorizontalLayout();
         topBar.setWidthFull();
         topBar.setHeight("5vh"); // 5% of viewport height
-        topBar.getStyle().set("background-color", "#2a2a2b");
+        topBar.getStyle()
+                .set("background-color", "#2a2a2b")
+                .set("border-bottom", "1px solid #555");
         topBar.setPadding(true);
         topBar.setAlignItems(FlexComponent.Alignment.CENTER);
-        topBar.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER); // center horizontally
+        topBar.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN); // space between left, center, right
         topBar.setSpacing(true);
 
-// --- Rounded search field ---
+// --- Left: Logo ---
+        H2 logo = new H2("Semaino");
+        logo.getStyle()
+                .set("color", "#fff")
+                .set("margin", "0")
+                .set("font-weight", "bold");
+
+// --- Center: Search field ---
         TextField searchField = new TextField();
         searchField.setPlaceholder("Search...");
-        searchField.setWidth("300px");
-        searchField.getStyle().set("background-color", "#1a1a1b");
-        searchField.getStyle().set("color", "#fff");
-        searchField.getStyle().set("border-radius", "20px"); // rounded
-        searchField.getStyle().set("padding", "5px 15px");
-        searchField.getStyle().set("border", "1px solid #555");
-// Add search field to top bar
-        topBar.add(searchField);
+        searchField.setWidth("20%"); // can adjust as needed
+        searchField.setHeight("95%");
+        searchField.getElement().getStyle().set("display", "flex");
+        searchField.getElement().getStyle().set("align-items", "center");
+        searchField.getStyle()
+                .set("background-color", "#666")
+                .set("color", "#fff")
+                .set("border-radius", "20px")
+                .set("border", "1px solid #555")
+                .set("padding", "0 15px");
+
+// --- Right: Bell + User avatar ---
+// --- Right: Bell + User avatar ---
+        HorizontalLayout rightLayout = new HorizontalLayout();
+        rightLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        rightLayout.setSpacing(true);
+
+// Bell icon
+        Icon bell = VaadinIcon.BELL.create();
+        bell.setSize("24px");
+        bell.getStyle().set("color", "#fff").set("cursor", "pointer");
+
+        Image userAvatarImg = new Image();
+        userAvatarImg.setWidth("32px");
+        userAvatarImg.setHeight("32px");
+        userAvatarImg.getStyle()
+                .set("border-radius", "50%")
+                .set("object-fit", "cover");
+
+        userService.getAvatarData(currentUser.getUsername()).ifPresentOrElse(
+                data -> {
+                    StreamResource resource = new StreamResource("avatar.png", () -> new ByteArrayInputStream(data));
+                    userAvatarImg.setSrc(resource);
+                },
+                () -> userAvatarImg.setSrc("/images/default-avatar.png") // fallback
+        );
+
+// Add bell and avatar to right layout
+        rightLayout.add(bell, userAvatarImg);
+        // Add click listener to avatar
+        userAvatarImg.getElement().addEventListener("click", e -> {
+            // Check if clicked avatar is current user's own avatar
+            String clickedUsername = currentUser.getUsername(); // for now, it's the currentUser
+            List<PostEntity> postsToShow;
+
+            if (clickedUsername.equals(currentUser.getUsername())) {
+                // Show own posts
+                postsToShow = postService.findPostsByUser(currentUser.getUsername());
+            } else {
+                // Show clicked user's posts
+                postsToShow = postService.findPostsByUser(clickedUsername);
+            }
+
+            // Sort newest first
+            postsToShow.sort(Comparator.comparing(PostEntity::getId).reversed());
+
+            // Prepare items for VirtualList
+            List<Object> items = new ArrayList<>();
+            items.add(createPostInputCardDB()); // keep input card
+            items.addAll(postsToShow);
+
+            dbPostList.setItems(items);
+        });
+
+
+
+
+// --- Add all components to top bar ---
+        topBar.add(logo, searchField, rightLayout);
+        topBar.setVerticalComponentAlignment(FlexComponent.Alignment.CENTER, logo, searchField, rightLayout);
+
+// --- Search functionality ---
+        searchField.addValueChangeListener(event -> {
+            String searchText = event.getValue().trim();
+            if (searchText.isEmpty()) {
+                loadPosts();
+                return;
+            }
+
+            Optional<UserEntity> user = userService.findByUsername(searchText);
+            if (user.isPresent()) {
+                List<PostEntity> userPosts = postService.findPostsByUser(searchText);
+                userPosts.sort(Comparator.comparing(PostEntity::getId).reversed()); // newest first
+
+                List<Object> items = new ArrayList<>();
+                items.add(createPostInputCardDB());
+                items.addAll(userPosts);
+
+                dbPostList.setItems(items);
+            } else {
+                dbPostList.setItems(List.of(createPostInputCardDB()));
+            }
+        });
+
+
 // --- Layout ---
         VerticalLayout listWithInput = new VerticalLayout(dbPostList);
         listWithInput.setWidthFull();
@@ -161,11 +237,58 @@ public class MediaViewDB extends VerticalLayout {
         listWithInput.setSpacing(false);
         listWithInput.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        HorizontalLayout mainLayout = new HorizontalLayout();
-        mainLayout.setWidthFull();
-        mainLayout.setHeightFull();
-        mainLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        mainLayout.add(listWithInput);
+        HorizontalLayout mainLayout = new HorizontalLayout(); // main container
+        mainLayout.setSizeFull();
+        mainLayout.setPadding(false);
+        mainLayout.setSpacing(false);
+
+
+        VerticalLayout forumLayout = new VerticalLayout();
+        forumLayout.setWidth("10%");
+        forumLayout.setHeightFull();
+        forumLayout.getStyle()
+                .set("border-right", "1px solid #333");
+        forumLayout.setPadding(true);
+        forumLayout.setSpacing(true);
+
+        Select<String> forumSelect = new Select<>();
+        forumSelect.setPlaceholder("Choose Forum");
+        forumSelect.setWidthFull();
+        forumSelect.getStyle().set("border", "1px solid white");
+
+        TextField nonWritableBox = new TextField();
+        nonWritableBox.setReadOnly(true);
+        nonWritableBox.setWidthFull();
+        nonWritableBox.getStyle().set("border", "1px solid white");
+
+        Div createLabel = new Div();
+        createLabel.setText("Create a new Forum");
+        createLabel.getStyle()
+                .set("font-weight", "bold")
+                .set("margin-top", "10px");
+
+        TextField writableBox = new TextField();
+        writableBox.setWidthFull();
+        writableBox.getStyle().set("border", "1px solid white");
+
+        forumLayout.add(forumSelect, nonWritableBox, createLabel, writableBox);
+
+
+// right layout for user info
+        VerticalLayout userLayout = new VerticalLayout();
+        userLayout.setWidth("10%");
+        userLayout.setHeightFull();
+        userLayout.getStyle().set("border-left", "1px solid #333");
+
+
+// add both layouts to main layout
+        mainLayout.add(forumLayout, listWithInput, userLayout);
+        mainLayout.setFlexGrow(0, forumLayout);
+        mainLayout.setFlexGrow(0, userLayout);
+        mainLayout.setFlexGrow(1, listWithInput);
+
+
+// use mainLayout as root conten
 
         add(topBar, mainLayout);
 
@@ -194,7 +317,6 @@ public class MediaViewDB extends VerticalLayout {
         commentCardLayout.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
         commentCardLayout.setAlignItems(Alignment.CENTER);
         commentCardLayout.addClassName("hover-card");
-        commentCardLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         commentCardLayout.setSpacing(true);
         commentCardLayout.setPadding(true);
         commentCardLayout.getStyle()
@@ -214,11 +336,18 @@ public class MediaViewDB extends VerticalLayout {
         commentCardLayout.setWidth("800px");
 
         // --- Top row ---
-// --- Top row ---
         HorizontalLayout topRow = new HorizontalLayout();
         String username = postData.getUserName();
 
+        // Avatar image
         Image avatarImg = new Image();
+        avatarImg.setWidth("50px");
+        avatarImg.setHeight("50px");
+        avatarImg.getStyle()
+                .set("border-radius", "50%")
+                .set("border", "1px solid #ffffff")
+                .set("object-fit", "cover");
+
         userService.getAvatarData(username).ifPresentOrElse(
                 data -> {
                     StreamResource resource = new StreamResource("avatar.png", () -> new ByteArrayInputStream(data));
@@ -227,22 +356,33 @@ public class MediaViewDB extends VerticalLayout {
                 () -> avatarImg.setSrc("/images/default-avatar.png") // fallback
         );
 
-        avatarImg.setWidth("50px");
-        avatarImg.setHeight("50px");
-        avatarImg.getStyle()
-                .set("border-radius", "50%")
-                .set("border", "1px solid #ffffff")
-                .set("background-color", "white");
+        // Avatar click navigates to the user's posts
+        avatarImg.getElement().addEventListener("click", e -> {
+            List<PostEntity> userPosts = postService.findPostsByUser(username);
+            userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
 
+            List<Object> items = new ArrayList<>();
+            items.add(createPostInputCardDB());
+            items.addAll(userPosts);
+            dbPostList.setItems(items);
+        });
+
+        // Username span
         Span userName = new Span(username);
         userName.getStyle()
                 .set("color", "#ffffff")
                 .set("text-decoration", "underline")
                 .set("cursor", "pointer");
 
-        userName.getElement().addEventListener("click", event -> {
-            VaadinSession.getCurrent().setAttribute("selectedUser", username);
-            UI.getCurrent().navigate("userpage");
+        // Username click navigates to user's posts (same as avatar click)
+        userName.getElement().addEventListener("click", e -> {
+            List<PostEntity> userPosts = postService.findPostsByUser(username);
+            userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
+
+            List<Object> items = new ArrayList<>();
+            items.add(createPostInputCardDB());
+            items.addAll(userPosts);
+            dbPostList.setItems(items);
         });
 
         Span commentTime = new Span("Posted on: " + postData.getTimestamp());
@@ -464,22 +604,54 @@ public class MediaViewDB extends VerticalLayout {
             HorizontalLayout topRow = new HorizontalLayout();
             String parentUsername = parentPost.getUserName();
 
-            Avatar parentAvatar = new Avatar();
-            String parentAvatarUrl = userService.getAvatarUrl(parentUsername);
-            parentAvatar.setImage(parentAvatarUrl);
-            parentAvatar.getStyle().set("border", "1px solid #fff");
+            // Parent avatar
+            Image parentAvatarImg = new Image();
+            parentAvatarImg.setWidth("50px");
+            parentAvatarImg.setHeight("50px");
+            parentAvatarImg.getStyle()
+                    .set("border-radius", "50%")
+                    .set("border", "1px solid #fff")
+                    .set("object-fit", "cover");
 
+            userService.getAvatarData(parentUsername).ifPresentOrElse(
+                    data -> {
+                        StreamResource resource = new StreamResource("avatar.png", () -> new ByteArrayInputStream(data));
+                        parentAvatarImg.setSrc(resource);
+                    },
+                    () -> parentAvatarImg.setSrc("/images/default-avatar.png")
+            );
+
+            // Click on parent avatar to filter posts by user
+            parentAvatarImg.getElement().addEventListener("click", e -> {
+                List<PostEntity> userPosts = postService.findPostsByUser(parentUsername);
+                userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
+
+                List<Object> items = new ArrayList<>();
+                items.add(createPostInputCardDB());
+                items.addAll(userPosts);
+                dbPostList.setItems(items);
+            });
+
+            // Parent username span
             Span parentUserSpan = new Span(parentUsername);
             parentUserSpan.getStyle()
                     .set("color", "#fff")
                     .set("text-decoration", "underline")
                     .set("cursor", "pointer");
-            parentUserSpan.getElement().addEventListener("click", e -> userService.navigateToUser(parentUsername));
+            parentUserSpan.getElement().addEventListener("click", e -> {
+                List<PostEntity> userPosts = postService.findPostsByUser(parentUsername);
+                userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
+
+                List<Object> items = new ArrayList<>();
+                items.add(createPostInputCardDB());
+                items.addAll(userPosts);
+                dbPostList.setItems(items);
+            });
 
             Span parentTime = new Span("Posted on: " + Post.formatTimestamp(parentPost.getTimestamp()));
             parentTime.getStyle().set("color", "#ffffff");
 
-            topRow.add(parentAvatar, parentUserSpan, parentTime);
+            topRow.add(parentAvatarImg, parentUserSpan, parentTime);
             topRow.setWidthFull();
             topRow.setAlignItems(Alignment.CENTER);
 
@@ -496,7 +668,6 @@ public class MediaViewDB extends VerticalLayout {
                     .set("margin-bottom", "10px")
                     .set("color", "#fff");
 
-            // Parent likes
             HorizontalLayout parentLikesRow = new HorizontalLayout();
             parentLikesRow.setWidth("750px");
             parentLikesRow.setJustifyContentMode(JustifyContentMode.BETWEEN);
@@ -512,21 +683,52 @@ public class MediaViewDB extends VerticalLayout {
 
         // --- Reply user info ---
         String replyUsername = postData.getUserName();
-        Avatar replyAvatar = new Avatar();
-        replyAvatar.setImage(userService.getAvatarUrl(replyUsername));
-        replyAvatar.getStyle().set("border", "1px solid #fff");
+        Image replyAvatarImg = new Image();
+        replyAvatarImg.setWidth("50px");
+        replyAvatarImg.setHeight("50px");
+        replyAvatarImg.getStyle()
+                .set("border-radius", "50%")
+                .set("border", "1px solid #fff")
+                .set("object-fit", "cover");
+
+        userService.getAvatarData(replyUsername).ifPresentOrElse(
+                data -> {
+                    StreamResource resource = new StreamResource("avatar.png", () -> new ByteArrayInputStream(data));
+                    replyAvatarImg.setSrc(resource);
+                },
+                () -> replyAvatarImg.setSrc("/images/default-avatar.png")
+        );
+
+        // Avatar click filters posts
+        replyAvatarImg.getElement().addEventListener("click", e -> {
+            List<PostEntity> userPosts = postService.findPostsByUser(replyUsername);
+            userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
+
+            List<Object> items = new ArrayList<>();
+            items.add(createPostInputCardDB());
+            items.addAll(userPosts);
+            dbPostList.setItems(items);
+        });
 
         Span replyUserSpan = new Span(replyUsername);
         replyUserSpan.getStyle()
                 .set("color", "#fff")
                 .set("text-decoration", "underline")
                 .set("cursor", "pointer");
-        replyUserSpan.getElement().addEventListener("click", e -> userService.navigateToUser(replyUsername));
+        replyUserSpan.getElement().addEventListener("click", e -> {
+            List<PostEntity> userPosts = postService.findPostsByUser(replyUsername);
+            userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
+
+            List<Object> items = new ArrayList<>();
+            items.add(createPostInputCardDB());
+            items.addAll(userPosts);
+            dbPostList.setItems(items);
+        });
 
         Span replyTime = new Span("Posted on: " + Post.formatTimestamp(postData.getTimestamp()));
         replyTime.getStyle().set("color", "#fff");
 
-        HorizontalLayout replyMeta = new HorizontalLayout(replyAvatar, replyUserSpan, replyTime);
+        HorizontalLayout replyMeta = new HorizontalLayout(replyAvatarImg, replyUserSpan, replyTime);
         replyMeta.setWidthFull();
         replyMeta.setAlignItems(Alignment.CENTER);
         replyMeta.getStyle().set("margin-left", "50px");
@@ -550,7 +752,6 @@ public class MediaViewDB extends VerticalLayout {
 
         Span likesCount = new Span("Liked: " + postData.getLikes());
         likesCount.getStyle().set("font-size", "14px").set("color", "#fff");
-        new LikeButtonDB(postData, postService, userService);
 
         replyLikesRow.add(likesCount, new LikeButtonDB(postData, postService, userService));
 
@@ -561,6 +762,7 @@ public class MediaViewDB extends VerticalLayout {
 
         return replyCardLayout;
     }
+
     private HorizontalLayout createReplyInputSectionDB(PostEntity parentPost) {
         TextField replyField = new TextField();
         replyField.setPlaceholder("Reply to " + parentPost.getUserName() + "...");

@@ -5,5 +5,6 @@ import java.util.List;
 
 public interface PostRepository extends JpaRepository<PostEntity, Long> {
     List<PostEntity> findByParentId(Long parentId);
+    List<PostEntity> findByUserName(String userName);
 }
 

@@ -3,6 +3,9 @@ package org.vaadin.example.social;
 import jakarta.persistence.*;
 import java.util.List;
 
+import jakarta.persistence.*;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 public class UserEntity {
@@ -24,7 +27,10 @@ public class UserEntity {
     @Column(name = "avatar_data")
     private byte[] avatarData; // store actual avatar image in DB
 
+    @Column(name = "post_count")
     private int postCount;
+
+    @Column(name = "like_count")
     private int likeCount;
 
     @ElementCollection
@@ -70,3 +76,4 @@ public class UserEntity {
     public List<String> getPostNames() { return postNames; }
     public void setPostNames(List<String> postNames) { this.postNames = postNames; }
 }
+
