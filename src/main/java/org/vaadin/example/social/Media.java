@@ -642,7 +642,7 @@ public class Media extends VerticalLayout {
                 .set("color", "white");
 
 
-        //this is the dropdown menu for Current Page: When you click on somethin it opens a dropdown of all subscribed pages
+        //this is the dropdown menu for Current Page: When you click on something it opens a dropdown of all subscribed pages
         Div pageSelectionPopup = new Div();
         pageSelectionPopup.getStyle()
                 .set("background-color", "#282b30")

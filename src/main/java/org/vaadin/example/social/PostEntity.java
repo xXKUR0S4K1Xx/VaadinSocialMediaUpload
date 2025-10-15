@@ -23,6 +23,10 @@ public class PostEntity {
     @Column(length = 1000)
     private String likedUsers;
 
+    @Column(name = "forum_id", nullable = true)
+    private Long forumId;
+
+
     // --- Constructors ---
     public PostEntity() {} // JPA requires default constructor
 
@@ -39,28 +43,26 @@ public class PostEntity {
 
     // --- Getters/Setters ---
     public Long getId() { return id; }
-
     public Long getParentId() { return parentId; }
     public void setParentId(Long parentId) { this.parentId = parentId; }
-
     public int getLikes() { return likes; }
     public void setLikes(int likes) { this.likes = likes; }
-
     public String getParentUser() { return parentUser; }
     public void setParentUser(String parentUser) { this.parentUser = parentUser; }
-
     public String getPostContent() { return postContent; }
     public void setPostContent(String postContent) { this.postContent = postContent; }
-
     public String getTimestamp() { return timestamp; }
     public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
-
     public String getUserName() { return userName; }
     public void setUserName(String userName) { this.userName = userName; }
-
     public String getLikedUsers() { return likedUsers; }
     public void setLikedUsers(String likedUsers) { this.likedUsers = likedUsers; }
-
+    public Long getForumId() {
+        return forumId;
+    }
+    public void setForumId(Long forumId) {
+        this.forumId = forumId;
+    }
     // --- Like handling ---
     public void addLike(String username) {
         if (likedUsers == null || likedUsers.isEmpty()) {

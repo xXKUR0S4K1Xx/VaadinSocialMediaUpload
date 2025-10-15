@@ -23,8 +23,13 @@ public class PostService {
             user.setPostCount(user.getPostCount() + 1);
             userService.save(user);
         });
-
+        if (post.getForumId() == null) {
+            throw new IllegalArgumentException("Forum ID must be set when saving a post");
+        }
         return repository.save(post);
+    }
+    public List<PostEntity> findPostsByForum(Long forumId) {
+        return repository.findByForumId(forumId);
     }
     public List<PostEntity> findPostsByUser(String username) {
         return repository.findByUserName(username);

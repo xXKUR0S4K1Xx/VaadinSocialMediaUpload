@@ -1,4 +1,5 @@
 package org.vaadin.example.social;
+import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
 
@@ -45,17 +46,21 @@ public class MediaViewDB extends VerticalLayout {
 
     private List<PostEntity> dbPosts;
     private VirtualList<Object> dbPostList; // use Object to allow input card + posts
-
+private final ForumService forumService;
     private Long replyToPostId = 0L;
     private String replyToUser = "";
     private TextArea contentField;
+    private ForumEntity currentForum;
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
-    public MediaViewDB(PostService postService, UserService userService, LikeService likeService) {
+    public MediaViewDB(ForumService forumService, PostService postService, UserService userService, LikeService likeService) {
+        this.forumService = forumService;
         this.postService = postService;
         this.userService = userService;
         this.likeService = likeService;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+        currentForum = forumService.findByName("all").orElseThrow();
+
 
         setSizeFull();
         setAlignItems(Alignment.CENTER);
@@ -135,8 +140,6 @@ public class MediaViewDB extends VerticalLayout {
         TextField searchField = new TextField();
         searchField.setPlaceholder("Search...");
         searchField.setWidth("20%"); // can adjust as needed
-        searchField.setHeight("95%");
-        searchField.getElement().getStyle().set("display", "flex");
         searchField.getElement().getStyle().set("align-items", "center");
         searchField.getStyle()
                 .set("background-color", "#666")
@@ -146,7 +149,6 @@ public class MediaViewDB extends VerticalLayout {
                 .set("padding", "0 15px");
 
 // --- Right: Bell + User avatar ---
-// --- Right: Bell + User avatar ---
         HorizontalLayout rightLayout = new HorizontalLayout();
         rightLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         rightLayout.setSpacing(true);
@@ -154,7 +156,9 @@ public class MediaViewDB extends VerticalLayout {
 // Bell icon
         Icon bell = VaadinIcon.BELL.create();
         bell.setSize("24px");
-        bell.getStyle().set("color", "#fff").set("cursor", "pointer");
+        bell.getStyle()
+                .set("color", "#fff")
+                .set("cursor", "pointer");
 
         Image userAvatarImg = new Image();
         userAvatarImg.setWidth("32px");
@@ -209,7 +213,7 @@ public class MediaViewDB extends VerticalLayout {
         searchField.addValueChangeListener(event -> {
             String searchText = event.getValue().trim();
             if (searchText.isEmpty()) {
-                loadPosts();
+                loadPostsByForum(currentForum.getId());
                 return;
             }
 
@@ -246,32 +250,80 @@ public class MediaViewDB extends VerticalLayout {
         VerticalLayout forumLayout = new VerticalLayout();
         forumLayout.setWidth("10%");
         forumLayout.setHeightFull();
-        forumLayout.getStyle()
-                .set("border-right", "1px solid #333");
+        forumLayout.getStyle().set("border-right", "1px solid #333");
         forumLayout.setPadding(true);
         forumLayout.setSpacing(true);
 
-        Select<String> forumSelect = new Select<>();
+// Forum dropdown
+        Select<ForumEntity> forumSelect = new Select<>();
+        forumSelect.setItems(forumService.findAllForums());
+        forumSelect.setItemLabelGenerator(ForumEntity::getName);
+        forumSelect.setValue(currentForum); // default "all"
+        forumSelect.addValueChangeListener(e -> {
+            currentForum = e.getValue();
+            System.out.println("Selected forum changed to: " + currentForum.getName() + " (ID=" + currentForum.getId() + ")");
+            e.getSource().getUI().ifPresent(ui -> ui.getPage().reload());
+            loadPostsByForum(currentForum.getId());
+        });
         forumSelect.setPlaceholder("Choose Forum");
-        forumSelect.setWidthFull();
+        forumSelect.setWidth("90%");
         forumSelect.getStyle().set("border", "1px solid white");
 
+// Read-only box
         TextField nonWritableBox = new TextField();
         nonWritableBox.setReadOnly(true);
-        nonWritableBox.setWidthFull();
+        nonWritableBox.setWidth("90%");
         nonWritableBox.getStyle().set("border", "1px solid white");
 
+// Label
         Div createLabel = new Div();
         createLabel.setText("Create a new Forum");
         createLabel.getStyle()
                 .set("font-weight", "bold")
-                .set("margin-top", "10px");
+                .set("margin-top", "10px")
+                .set("color", "white")
+                .set("border", "1px solid white")
+                .set("padding", "1px 5px")
+                .set("border-radius", "6px")
+                .set("width", "90%");
 
+// TextField for new forum name
         TextField writableBox = new TextField();
-        writableBox.setWidthFull();
-        writableBox.getStyle().set("border", "1px solid white");
+        writableBox.getStyle()
+                .set("border", "1px solid white")
+                .set("border-radius", "6px");
 
-        forumLayout.add(forumSelect, nonWritableBox, createLabel, writableBox);
+// Create button
+        Button createButton = new Button("Create", e -> {
+            String forumName = writableBox.getValue().trim();
+            if (forumName.isEmpty()) {
+                Notification.show("Forum name cannot be empty").setPosition(Notification.Position.TOP_CENTER);
+                return;
+            }
+            Long currentUserId = currentUser.getId();
+
+            forumService.findByName(forumName).ifPresentOrElse(
+                    f -> Notification.show("Forum already exists").setPosition(Notification.Position.TOP_CENTER),
+                    () -> {
+                        ForumEntity forum = forumService.createForum(forumName, currentUserId, "");
+                        Notification.show("Forum created: " + forum.getName()).setPosition(Notification.Position.TOP_CENTER);
+                    }
+            );
+            writableBox.clear();
+        });
+        createButton.setWidth("90%");
+        createButton.getStyle()
+                .set("color", "white")
+                .set("border", "1px solid white")
+                .set("border-radius", "6px");
+
+// Add components once after creating them
+        forumLayout.add(createLabel, forumSelect, writableBox, createButton);
+
+
+        refreshForumList(forumLayout, createLabel, writableBox, createButton);
+
+
 
 
 // right layout for user info
@@ -293,22 +345,88 @@ public class MediaViewDB extends VerticalLayout {
         add(topBar, mainLayout);
 
 // --- Load posts initially ---
-        loadPosts();
-    }
-
-    private void loadPosts() {
-        if (dbPostList == null) return; // safety check
-        dbPosts = postService.findAll();
-        dbPosts.sort((a, b) -> b.getId().compareTo(a.getId())); // newest first
-
-        List<Object> allItems = new ArrayList<>();
-        allItems.add(createPostInputCardDB()); // input card at top
-        allItems.addAll(dbPosts);
-
-        dbPostList.setItems(allItems);
+        loadPostsByForum(currentForum.getId());
     }
 
 
+    private void loadPostsByForum(Long forumId) {
+        List<PostEntity> posts = postService.findPostsByForum(forumId);
+        posts.sort(Comparator.comparing(PostEntity::getId).reversed());
+
+        List<Object> items = new ArrayList<>();
+        items.add(createPostInputCardDB()); // always fresh, reads currentForum
+        items.addAll(posts);
+        dbPostList.setItems(items);
+    }
+
+
+    // --- inside your class, after loadPosts() ---
+    private void refreshForumList(VerticalLayout forumLayout, Div createLabel, TextField writableBox, Button createButton) {
+        forumLayout.removeAll();
+
+        // Get all forums
+        List<ForumEntity> forums = forumService.findAllForums();
+
+        // Dropdown for forum selection
+        Select<ForumEntity> forumDropdown = new Select<>();
+        forumDropdown.setItems(forums);
+        forumDropdown.setItemLabelGenerator(ForumEntity::getName);
+        forumDropdown.setWidthFull();
+        forumDropdown.setPlaceholder("Select a forum");
+        forumDropdown.getStyle()
+                .set("font-size", "9px")
+                .set("color", "white")
+                .set("border-radius", "6px")
+                .set("border", "1px solid white")
+                .set("padding", "4px")
+                .set("margin-bottom", "8px")
+                .set("width", "100%");
+
+
+        // Style label
+        createLabel.getStyle()
+                .set("font-weight", "bold")
+                .set("color", "white")
+                .set("border", "1px solid white")
+                .set("padding", "2px 5px")
+                .set("border-radius", "6px")
+                .set("margin-bottom", "8px")
+                .set("width", "100%");
+
+        // Style writableBox
+        writableBox.setWidthFull();
+        writableBox.getStyle()
+                .set("border", "1px solid white")
+                .set("border-radius", "6px")
+                .set("margin-bottom", "8px")
+                .set("width", "100%");
+
+
+        // Style createButton
+        createButton.setWidthFull();
+        createButton.getStyle()
+                .set("color", "white")
+                .set("border", "1px solid white")
+                .set("border-radius", "6px")
+                .set("width", "100%");
+
+
+        // Set currently selected forum
+        forumDropdown.setValue(currentForum);
+
+        // Handle selection
+        forumDropdown.addValueChangeListener(e -> {
+            ForumEntity selected = e.getValue();
+            if (selected != null) {
+                currentForum = selected; // update currentForum
+                Notification.show("Selected forum: " + selected.getName());
+                loadPostsByForum(currentForum.getId()); // immediately load posts
+            }
+        });
+
+        // Add dropdown and create controls
+        forumLayout.add(forumDropdown, createLabel, writableBox, createButton);
+    }
 
     /** Create styled card for each post */
     private VerticalLayout createCommentCardDB(PostEntity postData) {
@@ -438,9 +556,10 @@ public class MediaViewDB extends VerticalLayout {
                     replyPost.setParentUser(postData.getUserName());
                     replyPost.setLikes(0);
 
+                    replyPost.setForumId(currentForum.getId());
                     postService.save(replyPost);
                     replyField.clear();
-                    loadPosts();
+                    loadPostsByForum(currentForum.getId());
                 } else {
                     Notification.show("No logged-in user to post reply");
                 }
@@ -548,27 +667,54 @@ public class MediaViewDB extends VerticalLayout {
         postArea.setWidthFull();
         postArea.setHeight("120px");
 
-        // --- Post button ---
-        Button postButton = new Button("Post", e -> {
-            if (!postArea.isEmpty()) {
+        Button postButton = new Button("Post", ev -> {
+            if (currentUser != null && !postArea.isEmpty()) {
+                LocalDateTime now = LocalDateTime.now();
+                String content = postArea.getValue();
+
+                // Save post to the selected forum
                 PostEntity newPost = new PostEntity();
                 newPost.setUserName(currentUser.getUsername());
-                newPost.setPostContent(postArea.getValue());
-                newPost.setTimestamp(LocalDateTime.now().format(formatter));
+                newPost.setPostContent(content);
+                newPost.setTimestamp(now.format(formatter));
                 newPost.setParentId(0L);
                 newPost.setLikes(0);
                 newPost.setLikedUsers("");
 
+                // Ensure currentForum is not null
+                if (currentForum == null) {
+                    System.out.println("WARNING: currentForum is null, defaulting to 'All'");
+                    currentForum = forumService.findByName("all").orElse(null);
+                }
+                newPost.setForumId(currentForum.getId());
+
+                System.out.println("Posting to forum: " + currentForum.getName() + " (ID=" + currentForum.getId() + ")");
                 postService.save(newPost);
+
+                // Also post a copy to "all" forum (ID 4) if it's not already "all"
+                if (!currentForum.getId().equals(4L)) {
+                    PostEntity allPost = new PostEntity();
+                    allPost.setUserName(currentUser.getUsername());
+                    allPost.setPostContent(content);
+                    allPost.setTimestamp(now.format(formatter));
+                    allPost.setParentId(0L);
+                    allPost.setLikes(0);
+                    allPost.setLikedUsers("");
+                    allPost.setForumId(4L);
+                    postService.save(allPost);
+                }
 
                 // Update user's post count
                 currentUser.setPostCount(currentUser.getPostCount() + 1);
                 userService.save(currentUser);
 
                 postArea.clear();
-                getUI().ifPresent(ui -> ui.getPage().reload());
+                loadPostsByForum(currentForum.getId()); // refresh posts
             }
         });
+
+
+
 
         postButton.getStyle()
                 .set("background-color", "#E0E0E0")
@@ -780,9 +926,10 @@ public class MediaViewDB extends VerticalLayout {
                     replyPost.setParentUser(parentPost.getUserName());
                     replyPost.setLikes(0);
 
+                    replyPost.setForumId(currentForum.getId());
                     postService.save(replyPost);
                     replyField.clear();
-                    loadPosts(); // reload the list
+                    loadPostsByForum(currentForum.getId());
                 } else {
                     Notification.show("No logged-in user to post reply");
                 }
