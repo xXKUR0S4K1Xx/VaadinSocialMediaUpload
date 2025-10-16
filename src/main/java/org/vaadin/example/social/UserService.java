@@ -22,6 +22,17 @@ public class UserService {
         this.repository = repository;
     }
 
+    @Transactional(readOnly = true)
+    public UserEntity getCurrentLoggedInUser() {
+        // Example: read from VaadinSession
+        String username = (String) VaadinSession.getCurrent().getAttribute("loggedInUser");
+        if (username == null) {
+            throw new RuntimeException("No logged-in user in session");
+        }
+        return findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+    }
+
     @Transactional
     public UserEntity save(UserEntity user) {
         return repository.save(user);
@@ -86,4 +97,5 @@ public class UserService {
         VaadinSession.getCurrent().setAttribute("selectedUser", username);
         UI.getCurrent().navigate("userpage");
     }
+
 }

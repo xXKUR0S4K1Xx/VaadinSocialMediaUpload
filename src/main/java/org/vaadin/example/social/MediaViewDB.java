@@ -43,6 +43,7 @@ public class MediaViewDB extends VerticalLayout {
     private final PostService postService;
     private final UserService userService;
     private final LikeService likeService;
+    private String selectedUser;
 
     private List<PostEntity> dbPosts;
     private VirtualList<Object> dbPostList; // use Object to allow input card + posts
@@ -332,6 +333,14 @@ private final ForumService forumService;
         userLayout.setHeightFull();
         userLayout.getStyle().set("border-left", "1px solid #333");
 
+        Image userAvatar = new Image("images/default-avatar.png", "User Avatar");
+        userAvatar.setWidth("80px");
+        userAvatar.setHeight("80px");
+
+
+// add avatar to the layout
+        userLayout.add(userAvatar);
+
 
 // add both layouts to main layout
         mainLayout.add(forumLayout, listWithInput, userLayout);
@@ -574,7 +583,14 @@ private final ForumService forumService;
 
         return commentCardLayout;
     }
+    public void setSelectedUser(String username) {
+        this.selectedUser = username;
+    }
 
+    // optional getter
+    public String getSelectedUser() {
+        return selectedUser;
+    }
     private Component createPostInputCardDB() {
         VerticalLayout postLayout = new VerticalLayout();
         postLayout.addClassName("hover-card");
