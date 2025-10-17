@@ -41,6 +41,9 @@ public class ForumService {
             return forumRepo.save(forum);
         });
     }
+    public Optional<ForumRoleEntity> getForumRoleForUser(Long userId, Long forumId) {
+        return roleRepo.findByUserIdAndForumId(userId, forumId);
+    }
 
     public List<ForumEntity> findAllForums() {
         return forumRepo.findAll();

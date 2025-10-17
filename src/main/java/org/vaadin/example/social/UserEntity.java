@@ -33,6 +33,18 @@ public class UserEntity {
     @Column(name = "like_count")
     private int likeCount;
 
+    @Column(name = "status", length = 500)
+    private String status;
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+
     @ElementCollection
     @CollectionTable(name = "user_posts", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "post_name", length = 500)

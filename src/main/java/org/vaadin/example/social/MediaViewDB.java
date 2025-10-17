@@ -5,6 +5,14 @@ import com.vaadin.flow.component.html.Image;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.server.StreamResource;
+
+import java.io.ByteArrayInputStream;
+import java.util.function.Consumer;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
@@ -39,10 +47,12 @@ import java.util.Optional;
 
 @Route("mediadb")
 public class MediaViewDB extends VerticalLayout {
+    private String selectedUser;
 
     private final PostService postService;
     private final UserService userService;
     private final LikeService likeService;
+    private String activeUsername;
 
     private List<PostEntity> dbPosts;
     private VirtualList<Object> dbPostList; // use Object to allow input card + posts
@@ -100,6 +110,69 @@ private final ForumService forumService;
         dbPostList.setItems(allItems);
 
 // --- Renderer ---
+// --- User layout ---
+        VerticalLayout userLayout = new VerticalLayout();
+        userLayout.setWidth("10%");
+        userLayout.setHeightFull();
+        userLayout.getStyle().set("border-left", "1px solid #333");
+        userLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        userLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
+
+        String defaultUsername = currentUser != null ? currentUser.getUsername() : "Anonymous";
+
+// Avatar
+        Image userAvatar = new Image();
+        userAvatar.setWidth("80px");
+        userAvatar.setHeight("80px");
+        userAvatar.getStyle()
+                .set("border-radius", "50%")
+                .set("border", "1px solid #333")
+                .set("object-fit", "cover");
+
+        userService.getAvatarData(defaultUsername).ifPresentOrElse(
+                data -> userAvatar.setSrc(new StreamResource(defaultUsername + "-avatar.png",
+                        () -> new ByteArrayInputStream(data))),
+                () -> userAvatar.setSrc("images/default-avatar.png")
+        );
+
+// Username div
+        Div userNameDiv = new Div();
+        userNameDiv.setText(defaultUsername);
+        userNameDiv.getStyle()
+                .set("color", "white")
+                .set("margin-top", "8px")
+                .set("text-align", "center");
+// --- Status field ---
+        TextField statusField = new TextField("Status");
+        statusField.setWidthFull();
+        statusField.getStyle().set("color", "white");
+        statusField.getStyle().set("margin-top", "8px");
+        statusField.getStyle().set("text-align", "center");
+
+// Load initial status for default user
+        userService.findByUsername(defaultUsername).ifPresent(user -> {
+            statusField.setValue(user.getStatus() != null ? user.getStatus() : "");
+        });
+
+// Editable only if default user is the logged-in user
+        statusField.setReadOnly(!defaultUsername.equals(currentUser.getUsername()));
+
+// Persist edits
+        statusField.addValueChangeListener(e -> {
+            if (defaultUsername.equals(currentUser.getUsername())) {
+                userService.findByUsername(currentUser.getUsername()).ifPresent(user -> {
+                    user.setStatus(e.getValue());
+                    userService.save(user);
+                });
+            }
+        });
+
+// Add it to userLayout
+        userLayout.add(userAvatar, userNameDiv, statusField);
+
+        userLayout.add(userAvatar, userNameDiv);
+
+// --- Now set up dbPostList and renderer ---
         dbPostList.setRenderer(new ComponentRenderer<>(item -> {
             if (item instanceof Component c) {
                 c.getStyle().set("margin", "0 auto");
@@ -107,7 +180,7 @@ private final ForumService forumService;
                 return c;
             } else if (item instanceof PostEntity p) {
                 Component card = (p.getParentId() == 0L)
-                        ? createCommentCardDB(p)
+                        ? createCommentCardDB(p, userLayout, userAvatar, userNameDiv, statusField)
                         : createReplyCardDB(p);
 
                 card.getStyle().set("margin", "0 auto");
@@ -116,6 +189,7 @@ private final ForumService forumService;
                 return card;
             } else return new Span("Unknown item");
         }));
+
 
 // --- Top bar layout ---
         HorizontalLayout topBar = new HorizontalLayout();
@@ -130,11 +204,8 @@ private final ForumService forumService;
         topBar.setSpacing(true);
 
 // --- Left: Logo ---
-        H2 logo = new H2("Semaino");
-        logo.getStyle()
-                .set("color", "#fff")
-                .set("margin", "0")
-                .set("font-weight", "bold");
+        // --- Logo ---
+
 
 // --- Center: Search field ---
         TextField searchField = new TextField();
@@ -206,8 +277,7 @@ private final ForumService forumService;
 
 
 // --- Add all components to top bar ---
-        topBar.add(logo, searchField, rightLayout);
-        topBar.setVerticalComponentAlignment(FlexComponent.Alignment.CENTER, logo, searchField, rightLayout);
+
 
 // --- Search functionality ---
         searchField.addValueChangeListener(event -> {
@@ -320,17 +390,181 @@ private final ForumService forumService;
 // Add components once after creating them
         forumLayout.add(createLabel, forumSelect, writableBox, createButton);
 
-
         refreshForumList(forumLayout, createLabel, writableBox, createButton);
 
+// --- Check user roles and show admin/moderator controls ---
+        if (currentUser != null && currentForum != null) {
+            Optional<ForumRoleEntity> userRoleOpt = forumService.getForumRoleForUser(currentUser.getId(), currentForum.getId());
+
+            userRoleOpt.ifPresent(role -> {
+                // Administrator section
+                if ("ADMIN".equalsIgnoreCase(role.getRole())) {
+                    Div adminLabel = new Div();
+                    adminLabel.setText("Administrator");
+                    adminLabel.getStyle()
+                            .set("font-weight", "bold")
+                            .set("color", "white")
+                            .set("margin-top", "20px")
+                            .set("text-align", "center");
+
+                    Button editForumButton = new Button("Edit Forum");
+                    editForumButton.setWidth("90%");
+                    editForumButton.getStyle()
+                            .set("color", "white")
+                            .set("border", "1px solid white")
+                            .set("border-radius", "6px");
+                    editForumButton.addClickListener(ev -> {
+                        Notification.show("Forum edit opened for Admin: " + currentForum.getName())
+                                .setPosition(Notification.Position.TOP_CENTER);
+                        // TODO: open edit dialog or navigation later
+                    });
+
+                    forumLayout.add(adminLabel, editForumButton);
+                }
+
+                // Moderator section
+                if ("MODERATOR".equalsIgnoreCase(role.getRole())) {
+                    Div modLabel = new Div();
+                    modLabel.setText("Moderator");
+                    modLabel.getStyle()
+                            .set("font-weight", "bold")
+                            .set("color", "white")
+                            .set("margin-top", "20px")
+                            .set("text-align", "center");
+
+                    Button editButton = new Button("Edit");
+                    editButton.setWidth("90%");
+                    editButton.getStyle()
+                            .set("color", "white")
+                            .set("border", "1px solid white")
+                            .set("border-radius", "6px");
+                    editButton.addClickListener(ev -> {
+                        Notification.show("Moderator edit opened for forum: " + currentForum.getName())
+                                .setPosition(Notification.Position.TOP_CENTER);
+                        // TODO: open moderator edit dialog later
+                    });
+
+                    forumLayout.add(modLabel, editButton);
+                }
+            });
+        }
 
 
-
-// right layout for user info
-        VerticalLayout userLayout = new VerticalLayout();
         userLayout.setWidth("10%");
         userLayout.setHeightFull();
         userLayout.getStyle().set("border-left", "1px solid #333");
+        userLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        userLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
+
+// --- Avatar ---
+        userAvatar.setWidth("80px");
+        userAvatar.setHeight("80px");
+        userAvatar.getStyle()
+                .set("border-radius", "50%")
+                .set("border", "1px solid #333")
+                .set("object-fit", "cover");
+
+// --- Username ---
+        userNameDiv.setText(defaultUsername);
+        userNameDiv.getStyle()
+                .set("color", "white")
+                .set("margin-top", "8px")
+                .set("text-align", "center");
+
+// --- Status field ---
+        // --- Status field ---
+        statusField.setWidthFull();
+        statusField.getStyle().set("color", "white");
+        statusField.getStyle().set("margin-top", "8px");
+        statusField.getStyle().set("text-align", "center");
+
+// --- Save button ---
+        Button saveStatusButton = new Button("Save", e -> {
+            if (currentUser != null && activeUsername.equals(currentUser.getUsername())) {
+                userService.findByUsername(currentUser.getUsername()).ifPresent(user -> {
+                    user.setStatus(statusField.getValue());
+                    userService.save(user);
+                    Notification.show("Status saved").setPosition(Notification.Position.TOP_CENTER);
+                });
+            }
+        });
+        saveStatusButton.setVisible(defaultUsername.equals(currentUser.getUsername())); // only visible for current user
+
+// Load initial status for default user
+        userService.findByUsername(defaultUsername).ifPresent(user -> {
+            statusField.setValue(user.getStatus() != null ? user.getStatus() : "");
+        });
+        H2 logo = new H2("Semaino");
+        logo.getStyle()
+                .set("color", "#fff")
+                .set("margin", "0")
+                .set("font-weight", "bold")
+                .set("cursor", "pointer"); // show it's clickable
+
+        logo.addClickListener(e -> {
+            // Only reset if current user is logged in
+            if (currentUser != null) {
+                // Reset active user to current logged-in user
+                activeUsername = currentUser.getUsername();
+
+                // Reset layout to show current user’s avatar + status
+                userService.getAvatarData(activeUsername).ifPresentOrElse(
+                        data -> {
+                            StreamResource resource = new StreamResource(activeUsername + "-avatar.png",
+                                    () -> new ByteArrayInputStream(data));
+                            userAvatar.setSrc(resource);
+                        },
+                        () -> userAvatar.setSrc("images/default-avatar.png")
+                );
+
+                // Reload status
+                userService.findByUsername(activeUsername).ifPresent(user -> {
+                    statusField.setValue(user.getStatus() != null ? user.getStatus() : "");
+                });
+
+                // Update name label
+                userNameDiv.setText(activeUsername);
+
+                // Make editable & show save button again
+                statusField.setReadOnly(false);
+                saveStatusButton.setVisible(true);
+            }
+        });
+
+// Editable only if default user is the logged-in user
+        statusField.setReadOnly(!defaultUsername.equals(currentUser.getUsername()));
+
+// --- Refresh logic ---
+        Consumer<String> refreshUserLayout = clickedUsername -> {
+            activeUsername = clickedUsername;
+            userNameDiv.setText(clickedUsername);
+
+            // Update avatar
+            userService.getAvatarData(clickedUsername).ifPresentOrElse(
+                    data -> {
+                        StreamResource resource = new StreamResource(clickedUsername + "-avatar.png",
+                                () -> new ByteArrayInputStream(data));
+                        userAvatar.setSrc(resource);
+                    },
+                    () -> userAvatar.setSrc("images/default-avatar.png")
+            );
+
+            // Update status field but do NOT save automatically
+            userService.findByUsername(clickedUsername).ifPresent(user -> {
+                statusField.setValue(user.getStatus() != null ? user.getStatus() : "");
+            });
+
+            // Editable only if active user is current user
+            boolean isActiveUserCurrent = clickedUsername.equals(currentUser.getUsername());
+            statusField.setReadOnly(!isActiveUserCurrent);
+            saveStatusButton.setVisible(isActiveUserCurrent);
+        };
+
+// --- Add all components to layout ---
+        userLayout.add(userAvatar, userNameDiv, statusField, saveStatusButton);
+        topBar.add(logo, searchField, rightLayout);
+        topBar.setVerticalComponentAlignment(FlexComponent.Alignment.CENTER, logo, searchField, rightLayout);
+
 
 
 // add both layouts to main layout
@@ -347,7 +581,14 @@ private final ForumService forumService;
 // --- Load posts initially ---
         loadPostsByForum(currentForum.getId());
     }
+    public void setSelectedUser(String username) {
+        this.selectedUser = username;
+    }
 
+    // optional getter
+    public String getSelectedUser() {
+        return selectedUser;
+    }
 
     private void loadPostsByForum(Long forumId) {
         List<PostEntity> posts = postService.findPostsByForum(forumId);
@@ -429,7 +670,11 @@ private final ForumService forumService;
     }
 
     /** Create styled card for each post */
-    private VerticalLayout createCommentCardDB(PostEntity postData) {
+    private VerticalLayout createCommentCardDB(PostEntity postData,
+                                               VerticalLayout userLayout,
+                                               Image userAvatar,
+                                               Div userNameDiv,
+                                               TextField statusField) { // pass statusField
         // --- Card container ---
         VerticalLayout commentCardLayout = new VerticalLayout();
         commentCardLayout.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
@@ -471,16 +716,42 @@ private final ForumService forumService;
                     StreamResource resource = new StreamResource("avatar.png", () -> new ByteArrayInputStream(data));
                     avatarImg.setSrc(resource);
                 },
-                () -> avatarImg.setSrc("/images/default-avatar.png") // fallback
+                () -> avatarImg.setSrc("/images/default-avatar.png")
         );
 
-        // Avatar click navigates to the user's posts
+        // --- Refresh logic for right-hand userLayout ---
+        Consumer<String> refreshUserLayout = clickedUsername -> {
+            activeUsername = clickedUsername;
+            userNameDiv.setText(clickedUsername);
+
+            userService.getAvatarData(clickedUsername).ifPresentOrElse(
+                    data -> {
+                        StreamResource resource = new StreamResource(clickedUsername + "-avatar.png",
+                                () -> new ByteArrayInputStream(data));
+                        userAvatar.setSrc(resource);
+                    },
+                    () -> userAvatar.setSrc("images/default-avatar.png")
+            );
+
+            // Update status field
+            userService.findByUsername(clickedUsername).ifPresent(user -> {
+                statusField.setValue(user.getStatus() != null ? user.getStatus() : "");
+            });
+
+            // Editable only if active user is the logged-in user
+            UserEntity currentUser = VaadinSession.getCurrent().getAttribute(UserEntity.class);
+            statusField.setReadOnly(!clickedUsername.equals(currentUser.getUsername()));
+        };
+
+        // Avatar click: refresh userLayout and load posts for that user
         avatarImg.getElement().addEventListener("click", e -> {
+            refreshUserLayout.accept(username);
+
             List<PostEntity> userPosts = postService.findPostsByUser(username);
             userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
 
             List<Object> items = new ArrayList<>();
-            items.add(createPostInputCardDB());
+            items.add(createPostInputCardDB()); // keep input at top
             items.addAll(userPosts);
             dbPostList.setItems(items);
         });
@@ -492,8 +763,10 @@ private final ForumService forumService;
                 .set("text-decoration", "underline")
                 .set("cursor", "pointer");
 
-        // Username click navigates to user's posts (same as avatar click)
+        // Username click: same behavior as avatar
         userName.getElement().addEventListener("click", e -> {
+            refreshUserLayout.accept(username);
+
             List<PostEntity> userPosts = postService.findPostsByUser(username);
             userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
 
@@ -555,8 +828,8 @@ private final ForumService forumService;
                     replyPost.setParentId(postData.getId());
                     replyPost.setParentUser(postData.getUserName());
                     replyPost.setLikes(0);
-
                     replyPost.setForumId(currentForum.getId());
+
                     postService.save(replyPost);
                     replyField.clear();
                     loadPostsByForum(currentForum.getId());
@@ -742,6 +1015,8 @@ private final ForumService forumService;
                 .set("background-color", "#1a1a1b")
                 .set("color", "#ffffff");
 
+        UserEntity currentUser = VaadinSession.getCurrent().getAttribute(UserEntity.class);
+
         // --- Parent post info ---
         Optional<PostEntity> parentPostOpt = postService.findById(postData.getParentId());
         if (parentPostOpt.isPresent()) {
@@ -767,11 +1042,10 @@ private final ForumService forumService;
                     () -> parentAvatarImg.setSrc("/images/default-avatar.png")
             );
 
-            // Click on parent avatar to filter posts by user
+            // Avatar click filters posts
             parentAvatarImg.getElement().addEventListener("click", e -> {
                 List<PostEntity> userPosts = postService.findPostsByUser(parentUsername);
                 userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
-
                 List<Object> items = new ArrayList<>();
                 items.add(createPostInputCardDB());
                 items.addAll(userPosts);
@@ -787,7 +1061,6 @@ private final ForumService forumService;
             parentUserSpan.getElement().addEventListener("click", e -> {
                 List<PostEntity> userPosts = postService.findPostsByUser(parentUsername);
                 userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
-
                 List<Object> items = new ArrayList<>();
                 items.add(createPostInputCardDB());
                 items.addAll(userPosts);
@@ -800,6 +1073,7 @@ private final ForumService forumService;
             topRow.add(parentAvatarImg, parentUserSpan, parentTime);
             topRow.setWidthFull();
             topRow.setAlignItems(Alignment.CENTER);
+
 
             Div parentContent = new Div();
             parentContent.setText(parentPost.getPostContent());
@@ -829,6 +1103,7 @@ private final ForumService forumService;
 
         // --- Reply user info ---
         String replyUsername = postData.getUserName();
+
         Image replyAvatarImg = new Image();
         replyAvatarImg.setWidth("50px");
         replyAvatarImg.setHeight("50px");
@@ -849,7 +1124,6 @@ private final ForumService forumService;
         replyAvatarImg.getElement().addEventListener("click", e -> {
             List<PostEntity> userPosts = postService.findPostsByUser(replyUsername);
             userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
-
             List<Object> items = new ArrayList<>();
             items.add(createPostInputCardDB());
             items.addAll(userPosts);
@@ -864,7 +1138,6 @@ private final ForumService forumService;
         replyUserSpan.getElement().addEventListener("click", e -> {
             List<PostEntity> userPosts = postService.findPostsByUser(replyUsername);
             userPosts.sort(Comparator.comparing(PostEntity::getId).reversed());
-
             List<Object> items = new ArrayList<>();
             items.add(createPostInputCardDB());
             items.addAll(userPosts);
@@ -878,6 +1151,33 @@ private final ForumService forumService;
         replyMeta.setWidthFull();
         replyMeta.setAlignItems(Alignment.CENTER);
         replyMeta.getStyle().set("margin-left", "50px");
+
+        // --- Reply status field + save button ---
+        TextField replyStatusField = new TextField();
+        replyStatusField.setWidth("200px");
+        replyStatusField.getStyle()
+                .set("color", "white")
+                .set("margin-left", "50px")
+                .set("margin-top", "4px")
+                .set("text-align", "center");
+
+        Button saveStatusButton = new Button("Save", ev -> {
+            if (currentUser != null && replyUsername.equals(currentUser.getUsername())) {
+                userService.findByUsername(currentUser.getUsername()).ifPresent(user -> {
+                    user.setStatus(replyStatusField.getValue());
+                    userService.save(user);
+                    Notification.show("Status saved").setPosition(Notification.Position.TOP_CENTER);
+                });
+            }
+        });
+        saveStatusButton.getStyle().set("margin-left", "50px");
+        saveStatusButton.setVisible(replyUsername.equals(currentUser.getUsername()));
+
+        userService.findByUsername(replyUsername).ifPresent(user -> {
+            replyStatusField.setValue(user.getStatus() != null ? user.getStatus() : "");
+        });
+
+        replyStatusField.setReadOnly(!replyUsername.equals(currentUser.getUsername()));
 
         // --- Reply content ---
         Div replyContent = new Div();
@@ -901,9 +1201,8 @@ private final ForumService forumService;
 
         replyLikesRow.add(likesCount, new LikeButtonDB(postData, postService, userService));
 
+        // --- Assemble ---
         replyCardLayout.add(replyMeta, replyContent, replyLikesRow);
-
-        // --- Reply input section ---
         replyCardLayout.add(createReplyInputSectionDB(postData));
 
         return replyCardLayout;
