@@ -448,7 +448,7 @@ private final ForumService forumService;
                 }
             });
         }
-
+///  /
 
         userLayout.setWidth("10%");
         userLayout.setHeightFull();
